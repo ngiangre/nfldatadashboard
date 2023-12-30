@@ -1,0 +1,178 @@
+---
+title: "Example Plots (using QB position as example)"
+output: 
+    html_document:
+        theme:  cosmo
+        toc: true
+        toc_float: true
+        code_folding: hide
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  fig.height = 8,
+  out.width = "100%"
+)
+```
+
+```{r,echo=FALSE,include=FALSE}
+devtools::load_all()
+data_obj <- data_object$new()
+library(dplyr)
+library(tidyr)
+qb_sw_data <- 
+    data_obj$get_position_season_data(
+    'qb', #all Quarterbacks
+    'sw' #season-wide statistics
+) |> 
+    dplyr::select(
+        dplyr::all_of(c("player_display_name","team_abbr","week",
+                      data_obj$get_position_vars('qb')))
+    )
+qb_sa_data <- 
+    data_obj$get_position_season_data(
+    'qb', #all Quarterbacks
+    'sa' #season-average statistics
+) |> 
+    dplyr::select(
+        dplyr::all_of(c("player_display_name","team_abbr",
+                      data_obj$get_position_vars('qb')))
+    )
+```
+
+
+```{r}
+library(ggplot2)
+library(ggrepel)
+
+theme_set(
+    theme_minimal(base_size = 10)
+)
+
+qbs <- c("Josh Allen","Jalen Hurts","Mac Jones","Patrick Mahomes")
+```
+
+### Season-average distributions
+
+Each subplot shows the distribution of player performance for that statistic.
+
+```{r}
+dat <- 
+    qb_sa_data |> 
+    tidyr::pivot_longer(
+        cols = data_obj$get_position_vars('qb'),
+        names_to = "statistic"
+    )
+sub <- 
+    dat |> filter(player_display_name %in% qbs)
+
+pos <- position_jitter(width = 0.05,height=0.05,seed = 0)
+
+dat |> 
+    ggplot(aes(value,factor(1))) +
+    geom_boxplot(color="gray40",size = 0.5,
+                 outlier.shape = NA,alpha = 0, width = 0.25) +
+    geom_point(color = "gray70",position = pos) +
+    geom_text_repel(data = sub,size=3,color='black',fontface='bold',
+                     mapping=aes(label=player_display_name),
+                     force=80,min.segment.length = 0,position = pos) +
+    geom_point(data = sub, size = 2,color="black",fill='black',shape=21,position = pos) +
+    facet_wrap(~statistic,scales = "free_x",ncol=3) +
+    labs(y=NULL) +
+    theme(
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank()
+    )
+```
+
+### Season-average heatmap
+
+Performance visual comparison across players. 'Hot' colors represent high statistics and 'cold' colors represent low statistics *across* players. The hotter the player (i.e. column), the better the player in comparison to the others.
+
+```{r}
+qb_sa_data |> 
+    dplyr::filter(
+        player_display_name %in% qbs
+    ) |> 
+    tidyr::pivot_longer(
+        cols = data_obj$get_position_vars('qb'),
+        names_to = "statistic"
+    ) |> 
+    mutate(zvalue = (value - mean(value))/sd(value),.by = statistic) |> 
+    ggplot(aes(player_display_name,statistic,fill=zvalue)) +
+    geom_tile() +
+    scale_fill_gradient2(
+        low = "dodgerblue",
+        mid = "white",
+        high = "indianred"
+    ) +
+    geom_text(aes(label = round(value,1))) +
+    scale_x_discrete(position = "top") +
+    labs(x=NULL,y=NULL) +
+    theme(
+        legend.position = "none",
+        axis.text.x = element_text(size=10,face = "bold"),
+        axis.text.y = element_text(size=10,face = "bold")
+    )
+    
+```
+
+### Season-wide boxplots
+
+Distribution of player performance across the season for each performance statistic. Boxes are summaries for each player, such as the average performance being the middle line of the box. Each games performance is a point, and jittered within the box to avoid overlapping and to make it easier to see the distribution. 
+
+```{r}
+qb_sw_data |> 
+    dplyr::filter(
+        player_display_name %in% qbs
+    ) |> 
+    tidyr::pivot_longer(
+        cols = data_obj$get_position_vars('qb'),
+        names_to = "statistic"
+    ) |> 
+    ggplot(aes(value,player_display_name,
+               group=player_display_name)) +
+    geom_boxplot(size=1,fill="gray50",color="gray50",alpha=0,outlier.shape = NA) +
+    geom_jitter(width = 0.05,height=0.05,
+                show.legend = FALSE,color="black",fill='gray70',shape=21) +
+    facet_wrap(~statistic,scales = "free_x",ncol=3,
+               labeller = label_wrap_gen(width=15,multi_line = TRUE)) +
+    labs(y=NULL)
+    
+```
+
+### Season-wide scatterplot
+
+Distribution of player performance but including the variability vs. the consistency (average) of their performance over the season. Players below the dashed red line indicate more variable than consistent performance over the season. Players above the dashed red line indicate more consistent than variable performance over the season.
+
+```{r}
+dat <- 
+    qb_sw_data |> 
+    tidyr::pivot_longer(
+        cols = data_obj$get_position_vars('qb'),
+        names_to = "statistic"
+    ) |> 
+    summarise(
+        var = sd(value),
+        avg = mean(value),
+        .by = c(player_display_name,statistic)
+    )
+sub <- dat |> filter(player_display_name %in% qbs)
+
+dat |> 
+    ggplot(aes(var,avg)) +
+    geom_point(size=0.5,color='gray70') +
+    geom_point(data=sub) +
+    geom_text_repel(data=sub,aes(label=player_display_name),fontface='bold',
+                     min.segment.length = 0,force=80,size=3,max.overlaps = Inf) +
+    facet_wrap(~statistic,scales="free",ncol=3) +
+    scale_x_continuous(limits = c(0,NA)) +
+    labs(x='Variability in Performance',y="Average Performance")
+
+
+
+
+```
