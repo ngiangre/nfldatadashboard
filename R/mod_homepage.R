@@ -24,6 +24,7 @@ mod_homepage_ui <- function(id){
 mod_homepage_server <- function(id){
   moduleServer( id, function(input, output, session){
     ns <- session$ns
+    data_obj <- data_object$new()
   })
 }
 
