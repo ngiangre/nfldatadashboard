@@ -1,0 +1,64 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+# nfldatadashboard
+
+<!-- badges: start -->
+
+<!-- badges: end -->
+
+## Goal
+
+Interactively compare NFL player's performance within positions. Only QB, WR, and RB from Next Gen Stats 2023 season using {nflreadr}.
+
+## Outcomes
+
+1.  Select and compare player performance within positions
+2.  Visualize the distribution of player performance within positions
+3.  List custom player ranking within positions
+
+## Questions
+
+1.  How does my select player compare to other(s) across position's performance statistics?
+2.  How do players perform overall across performance statistics?
+3.  What are player's overall performance for select statistics?
+
+## Design
+
+-   3 navbar tabs for each position
+    -   Sidebar: Position statistics selection - will be passed to plots below
+    -   Select tab
+        -   Sidebar: Players selection
+        -   Season-average heatmap
+        -   Season-wide boxplot
+    -   Explore tab
+        -   Sidebar: Players selection (updated from plot interactivity too)
+        -   Season-wide scatterplot - use ggiraph for interactivity
+        -   Season-average histogram - add vertical lines for selected players
+
+## Data
+
+```{r,echo=FALSE,include=FALSE}
+devtools::load_all()
+data_obj <- data_object$new()
+```
+
+[Two types of player statistics:]{.underline}
+
+1.  Season-wide (each week)
+2.  Season-average (average over weeks)
+
+[Three positions:]{.underline}
+
+1.  Quarterback (QB)
+2.  Running back (RB)
+3.  Wide receiver (WR)
+
+[Performance statistics:]{.underline}
+
+1.  QB: `r length(data_obj$get_position_vars('qb'))`
+2.  RB: `r length(data_obj$get_position_vars('rb'))`
+3.  WR: `r length(data_obj$get_position_vars('wr'))`
