@@ -9,19 +9,12 @@
 #' @importFrom shiny NS tagList
 mod_homepage_ui <- function(id){
   ns <- NS(id)
-  tagList(
-      bslib::navset_pill_list(
-          bslib::nav_panel(
-              "Players",
-              mod_tables_ui(ns("tables_1"))
-          ),
-          bslib::nav_panel(
-              "Games",
-              mod_pbp_tables_ui(ns("pbp_tables_1"))
-          ),
-          id = "homepage_list",
-          widths = c(2,10)
-      )
+  bslib::page_navbar(
+      underline = TRUE,
+      bslib::nav_panel(title="QB"),
+      bslib::nav_panel(title="WR"),
+      bslib::nav_panel(title="RB"),
+      title = "nfldashboard"
   )
 }
 
