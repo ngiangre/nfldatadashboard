@@ -50,3 +50,6 @@ rsconnect/
 
 #HTML
 *.html
+
+#renv
+renv/
