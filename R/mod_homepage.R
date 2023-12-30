@@ -24,9 +24,6 @@ mod_homepage_ui <- function(id){
 mod_homepage_server <- function(id){
   moduleServer( id, function(input, output, session){
     ns <- session$ns
-    nfldata_obj <- nfldata_object$new()
-    mod_tables_server("tables_1",nfldata_obj)
-    mod_pbp_tables_server("pbp_tables_1",nfldata_obj)
   })
 }
 
