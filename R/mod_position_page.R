@@ -14,6 +14,15 @@ mod_position_page_ui <- function(id){
           width = 400,
           selectizeInput(ns('player'),label = NULL,choices=NULL,multiple = TRUE),
           selectizeInput(ns('stat'),label = NULL,choices=NULL,multiple = TRUE)
+      ),
+      bslib::navset_card_tab(
+          bslib::nav_panel(
+              "Side-by-Side Plots"
+          ),
+          bslib::nav_panel(
+              "Overall Plots"
+          ),
+          id = ns('plots')
       )
   )
 }
