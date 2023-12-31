@@ -44,7 +44,7 @@ data_object <- R6::R6Class("DataObject",
                                                tags$i(unname(vars_named)[.x])
                                            )
                                        })
-                                   sort(named_vars)
+                                   sort(named_vars,decreasing = TRUE)
                                },
                                get_position_players = function(pos){
                                    stopifnot(pos %in% c('qb','wr','rb'))
