@@ -24,6 +24,7 @@ mod_position_plots_server <- function(id,data_obj,ptype = c('qb','wr','rb')){
   ptype <- match.arg(ptype)
   moduleServer( id, function(input, output, session){
     ns <- session$ns
+    #https://stackoverflow.com/questions/73716725/is-there-a-way-to-display-html-inside-a-selectinput-in-an-r-shiny-app
     renderSelectizeUI <-
         I("{
             item: function(item, escape) {
