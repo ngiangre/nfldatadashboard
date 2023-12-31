@@ -30,6 +30,51 @@ data_object <- R6::R6Class("DataObject",
                                        purrr::reduce(intersect) |>
                                        setdiff(self$get_common_vars())
                                },
+                               get_named_position_vars = function(pos){
+                                   tmp <-
+                                       purrr::map(data_obj$get_position_season_data(pos,'sa'),
+                                                  ~attr(.x,"label"))
+                                   vars_named <- tmp[!(names(tmp) %in% self$get_common_vars())]
+                                   named_vars <- names(vars_named)
+                                   names(named_vars) <-
+                                       purrr::map_chr(seq_along(vars_named),~{
+                                           paste0(
+                                               tags$b(names(vars_named)[.x]),
+                                               "\n",
+                                               tags$i(unname(vars_named)[.x])
+                                           )
+                                       })
+                                   sort(named_vars)
+                               },
+                               get_position_players = function(pos){
+                                   stopifnot(pos %in% c('qb','wr','rb'))
+                                   purrr::map(
+                                       targets::tar_objects(
+                                           dplyr::starts_with(pos)
+                                       ),~{
+                                           targets::tar_read_raw(.x) |>
+                                               pull('player_display_name') |>
+                                               unique()
+                                       }) |>
+                                       purrr::reduce(intersect)
+                               },
+                               get_position_named_players = function(pos){
+                                   stopifnot(pos %in% c('qb','wr','rb'))
+                                   names_ <-
+                                       purrr::map(
+                                           targets::tar_objects(
+                                               dplyr::starts_with(pos)
+                                           ),~{
+                                               targets::tar_read_raw(.x) |>
+                                                   mutate(np = paste0(player_display_name," (",team_abbr,")")) |>
+                                                   purrr::pluck("np")
+                                           }) |>
+                                       purrr::reduce(intersect)
+                                   vals_ <- purrr::map_chr(stringr::str_split(names_,"\\("),~.x[1])
+                                   names(vals_) <- names_
+                                   order_ <- purrr::map_chr(stringr::str_split(names_,"\\("),~.x[2]) |> order()
+                                   names_[order_]
+                               },
                                get_position_season_data = function(pos,stype){
                                    stopifnot(pos %in% c('qb','wr','rb'))
                                    stopifnot(stype %in% c('sa','sw'))
