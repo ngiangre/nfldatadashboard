@@ -34,8 +34,7 @@ mod_position_page_server <- function(id,data_obj,ptype = c('qb','wr','rb')){
   ptype <- match.arg(ptype)
   moduleServer( id, function(input, output, session){
     ns <- session$ns
-    alldat_sw <-
-        {data_obj$get_position_season_data(
+    alldat_sw <- {data_obj$get_position_season_data(
             ptype,
             'sw'
         ) |>
@@ -48,8 +47,7 @@ mod_position_page_server <- function(id,data_obj,ptype = c('qb','wr','rb')){
             names_to = "statistic"
         )}
     subdat_sw <- reactive({alldat_sw |> filter(player_display_name %in% input$player)})
-    alldat_sa <-
-        {data_obj$get_position_season_data(
+    alldat_sa <- {data_obj$get_position_season_data(
             ptype,
             'sa'
         ) |>
