@@ -11,6 +11,7 @@ mod_position_plots_ui <- function(id){
   ns <- NS(id)
   bslib::layout_sidebar(
       sidebar = bslib::sidebar(
+          width = 400,
           selectizeInput(ns('player'),label = NULL,choices=NULL,multiple = TRUE),
           selectizeInput(ns('stat'),label = NULL,choices=NULL,multiple = TRUE)
       )
@@ -42,6 +43,7 @@ mod_position_plots_server <- function(id,data_obj,ptype = c('qb','wr','rb')){
                          ))
     updateSelectizeInput(session = session,inputId = 'stat',
                          choices = data_obj$get_named_position_vars(ptype),
+                         selected = data_obj$get_named_position_vars(ptype),
                          options = list(render = renderSelectizeUI),
                          label = stringr::str_glue(
                              "Select {stringr::str_to_upper(ptype)} performance indicators"
