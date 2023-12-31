@@ -70,10 +70,10 @@ data_object <- R6::R6Class("DataObject",
                                                    purrr::pluck("np")
                                            }) |>
                                        purrr::reduce(intersect)
-                                   vals_ <- purrr::map_chr(stringr::str_split(names_,"\\("),~.x[1])
+                                   vals_ <- purrr::map_chr(stringr::str_split(names_," \\("),~.x[1])
                                    names(vals_) <- names_
                                    order_ <- purrr::map_chr(stringr::str_split(names_,"\\("),~.x[2]) |> order()
-                                   names_[order_]
+                                   vals_[order_]
                                },
                                get_position_season_data = function(pos,stype){
                                    stopifnot(pos %in% c('qb','wr','rb'))
