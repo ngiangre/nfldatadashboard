@@ -1,4 +1,4 @@
-#' position_plots UI Function
+#' position_page UI Function
 #'
 #' @description A shiny Module.
 #'
@@ -7,7 +7,7 @@
 #' @noRd
 #'
 #' @importFrom shiny NS tagList
-mod_position_plots_ui <- function(id){
+mod_position_page_ui <- function(id){
   ns <- NS(id)
   bslib::layout_sidebar(
       sidebar = bslib::sidebar(
@@ -18,10 +18,10 @@ mod_position_plots_ui <- function(id){
   )
 }
 
-#' position_plots Server Functions
+#' position_page Server Functions
 #'
 #' @noRd
-mod_position_plots_server <- function(id,data_obj,ptype = c('qb','wr','rb')){
+mod_position_page_server <- function(id,data_obj,ptype = c('qb','wr','rb')){
   ptype <- match.arg(ptype)
   moduleServer( id, function(input, output, session){
     ns <- session$ns
@@ -53,7 +53,7 @@ mod_position_plots_server <- function(id,data_obj,ptype = c('qb','wr','rb')){
 }
 
 ## To be copied in the UI
-# mod_position_plots_ui("position_plots_1")
+# mod_position_page_ui("position_page_1")
 
 ## To be copied in the server
-# mod_position_plots_server("position_plots_1")
+# mod_position_page_server("position_page_1")
