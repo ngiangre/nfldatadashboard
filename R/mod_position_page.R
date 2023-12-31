@@ -34,10 +34,7 @@ mod_position_page_server <- function(id,data_obj,ptype = c('qb','wr','rb')){
   ptype <- match.arg(ptype)
   moduleServer( id, function(input, output, session){
     ns <- session$ns
-    alldat_sw <- {data_obj$get_position_season_data(
-            ptype,
-            'sw'
-        ) |>
+    alldat_sw <- {data_obj$get_position_season_data(ptype,'sw') |>
         dplyr::select(
             dplyr::all_of(c("player_display_name","team_abbr",'week',
                             data_obj$get_position_vars(ptype)))
@@ -47,10 +44,7 @@ mod_position_page_server <- function(id,data_obj,ptype = c('qb','wr','rb')){
             names_to = "statistic"
         )}
     subdat_sw <- reactive({alldat_sw |> filter(player_display_name %in% input$player)})
-    alldat_sa <- {data_obj$get_position_season_data(
-            ptype,
-            'sa'
-        ) |>
+    alldat_sa <- {data_obj$get_position_season_data(ptype,'sa') |>
         dplyr::select(
             dplyr::all_of(c("player_display_name","team_abbr",
                             data_obj$get_position_vars(ptype)))
