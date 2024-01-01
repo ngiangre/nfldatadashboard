@@ -11,11 +11,9 @@ License: MIT + file LICENSE
 Imports: 
     config (>= 0.3.2),
     golem (>= 0.4.1),
-    pkgload,
     shiny (>= 1.8.0),
     ggplot2,
-    scico,
-    ggrepel,
+    ggiraph,
     targets,
     bslib (>= 0.6.1),
     bsicons,
