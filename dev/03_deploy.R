@@ -18,6 +18,7 @@ rsconnect::deployApp(
     "_targets/",
     "NAMESPACE",
     "DESCRIPTION",
+    "run.R",
     "app.R"
   ),
   appId = rsconnect::deployments(".")$appID,
