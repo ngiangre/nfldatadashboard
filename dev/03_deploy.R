@@ -15,7 +15,7 @@ rsconnect::deployApp(
   appFiles = c(
     "R/",
     "inst/",
-    "data/",
+    "_targets/",
     "NAMESPACE",
     "DESCRIPTION",
     "app.R"
