@@ -7,53 +7,60 @@
 #' @noRd
 #'
 #' @importFrom shiny NS tagList selectizeInput plotOutput
+#' @importFrom ggiraph girafeOutput
 #' @importFrom bslib tooltip sidebar layout_sidebar accordion accordion_panel
 #' @importFrom bsicons bs_icon
 mod_position_page_ui <- function(id){
   ns <- NS(id)
   bslib::layout_sidebar(
       sidebar = bslib::sidebar(
-          width = 400,
-          selectizeInput(ns('player'),label = bslib::tooltip(
-              trigger = list("Select Player(s)",bsicons::bs_icon('info-circle')
-              ),"Message",id = ns("player_tooltip")),choices=NULL,multiple = TRUE),
+          width = 400,open = FALSE,
           selectizeInput(ns('stat'),label = bslib::tooltip(
               trigger = list("Select Performance Indicator(s)",bsicons::bs_icon('info-circle')
               ),"Message",id = ns("stat_tooltip")),choices=NULL,multiple = TRUE)
       ),
       bslib::navset_card_tab(
+          full_screen = FALSE, #ggiraph doesn't work when full screen?
           bslib::nav_panel(
               bslib::tooltip(list("Side-by-Side Player Comparisons",bsicons::bs_icon('info-circle')),
                              "Two plots displaying the average performance of the selected players."
               ),
+              selectizeInput(ns('player'),label = bslib::tooltip(
+                  trigger = list("Select Player(s)",bsicons::bs_icon('info-circle')
+                  ),"Message",id = ns("player_tooltip")),choices=NULL,multiple = TRUE,
+                  width = "100%"),
               bslib::accordion(
+                  open = c("Side-By-Side Overall Performance","Week-By-Week Season Performance"),
                   bslib::accordion_panel(
                       "Side-By-Side Overall Performance",
                       plotOutput(ns('sa_heatmap'))
                   ),
                   bslib::accordion_panel(
                       "Week-By-Week Season Performance",
-                      plotOutput(ns('sw_boxplots'),height = "1000px")
+                      girafeOutput(ns('sw_boxplots'),
+                                   width = 800,height = 800)
                   )
               )
           ),
           bslib::nav_panel(
               bslib::tooltip(list("Comparison With All Players",bsicons::bs_icon('info-circle')),
                              "Two plots displaying all players in this position (gray dots).",
-                             "Selected players are labelled for comparison."
-                             ),
+                             "Hover over dots to label players and performance."
+              ),
               bslib::accordion(
+                  open = c("Overall Performance","Overall Performance vs. Season Variability"),
                   bslib::accordion_panel(
                       "Overall Performance",
-                      plotOutput(ns('sa_distribution_plot'),height = "1000px")
+                      girafeOutput(ns('sa_distribution_plot'),
+                                   width = 800,height = 800)
                   ),
                   bslib::accordion_panel(
                       "Overall Performance vs. Season Variability",
-                      plotOutput(ns('sw_scatterplot'),height = "1000px")
+                      girafeOutput(ns('sw_scatterplot'),
+                                   width = 800,height = 800)
                   )
               )
-          ),
-          id = ns('plots')
+          )
       )
   )
 }
@@ -62,6 +69,7 @@ mod_position_page_ui <- function(id){
 #'
 #' @noRd
 #' @importFrom shiny reactive req renderPlot updateSelectizeInput observeEvent
+#' @importFrom ggiraph renderGirafe girafe opts_hover opts_hover_inv
 #' @importFrom bslib update_tooltip
 #' @importFrom stringr str_glue
 #' @importFrom dplyr select all_of filter
@@ -97,23 +105,39 @@ mod_position_page_server <- function(id,data_obj,ptype = c('qb','wr','rb')){
             )
     })
     subdat_sa <- reactive({alldat_sa() |> filter(player_display_name %in% input$player)})
-
     plot_obj = plot_object$new()
     output$sa_heatmap <- renderPlot({
         req(nrow(subdat_sa())>=1)
         plot_obj$sa_heatmap(subdat_sa())
     })
-    output$sw_boxplots <- renderPlot({
+    output$sw_boxplots <- renderGirafe({
         req(nrow(subdat_sw())>=1)
-        plot_obj$sw_boxplots(subdat_sw())
+        p <- plot_obj$sw_boxplots(subdat_sw())
+        girafe(code = print(p),
+               width_svg = 15, height_svg = 15,
+               options = list(
+                   opts_hover(css = "fill:red;stroke:black;cursor:pointer;")
+               ))
     })
-    output$sa_distribution_plot <- renderPlot({
-        req(nrow(subdat_sa())>=1)
-        plot_obj$sa_distribution_plot(alldat_sa(),subdat_sa())
+    output$sa_distribution_plot <- renderGirafe({
+        req(nrow(alldat_sa())>=1)
+        p <- plot_obj$sa_distribution_plot(alldat_sa())
+        girafe(code = print(p),
+               width_svg = 15, height_svg = 15,
+               options = list(
+                   opts_hover(css = "fill:red;stroke:black;cursor:pointer;"),
+                   opts_hover_inv(css = "opacity:0.4")
+                   ))
     })
-    output$sw_scatterplot <- renderPlot({
-        req(nrow(subdat_sw())>=1)
-        plot_obj$sw_scatterplot(alldat_sw(),subdat_sw())
+    output$sw_scatterplot <- renderGirafe({
+        req(nrow(alldat_sw())>=1)
+        p <- plot_obj$sw_scatterplot(alldat_sw())
+        girafe(code = print(p),
+               width_svg = 15, height_svg = 15,
+               options = list(
+                   opts_hover(css = "fill:red;stroke:black;cursor:pointer;"),
+                   opts_hover_inv(css = "opacity:0.4")
+               ))
     })
     #https://stackoverflow.com/questions/73716725/is-there-a-way-to-display-html-inside-a-selectinput-in-an-r-shiny-app
     renderSelectizeUI <-

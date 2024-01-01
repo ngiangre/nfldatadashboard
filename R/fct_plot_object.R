@@ -5,21 +5,18 @@
 #' @return The return value, if any, from executing the function.
 #'
 #' @import ggplot2
+#' @importFrom ggiraph geom_point_interactive
 #' @importFrom dplyr mutate summarise arrange desc
 #' @importFrom forcats fct_inorder
-#' @importFrom ggrepel geom_label_repel geom_text_repel
-#' @importFrom scico scale_fill_scico
+#' @importFrom stringr str_replace str_remove
 #' @noRd
 plot_object <- R6::R6Class("PlotObject",
                            public = list(
                                global_text_size = 16,
                                global_theme = theme_classic(base_size = 16),
-                               pos = position_jitter(width = 0.05,height=0.05,seed = 0),
-                               global_text_repel = function(sub,pos){
-                                   geom_label_repel(data = sub,size=5,color='black',fontface='bold',
-                                                   mapping=aes(label=player_display_name),
-                                                   force=80,min.segment.length = 0,position = pos)
-                               },
+                               pos_lil_jitter = position_jitter(width = 0.1,height=0.1,seed = 0),
+                               pos_big_jitter = position_jitter(width = 0.4,height=0.4,seed = 0),
+                               wrap_len = 25,
                                sa_heatmap = function(dat){
                                    dat |>
                                        mutate(statistic = factor(statistic)) |>
@@ -28,11 +25,15 @@ plot_object <- R6::R6Class("PlotObject",
                                        ggplot(aes(player_display_name,
                                                   forcats::fct_inorder(statistic),fill=zvalue)) +
                                        geom_tile() +
-                                       scico::scale_fill_scico(palette = "berlin") +
+                                       scale_fill_gradient2(
+                                           low = "dodgerblue",
+                                           mid = "white",
+                                           high = "indianred"
+                                       ) +
                                        geom_label(aes(label = round(value,1)),
                                                  color='black',fill='white',fontface='bold') +
                                        scale_x_discrete(position = "top",labels = label_wrap_gen(width=5)) +
-                                       labs(x=NULL,y=NULL) +
+                                       labs(x=NULL,y=NULL,caption="'Bluer' colors indicate lower performance compared to other players, 'redder' colors indicate higher performance compared to other players") +
                                        self$global_theme +
                                        theme(
                                            legend.position = "none",
@@ -42,32 +43,58 @@ plot_object <- R6::R6Class("PlotObject",
                                },
                                sw_boxplots = function(dat){
                                    dat |>
+                                       mutate(
+                                           week_tooltip = stringr::str_glue("
+                                           Player: {player_display_name}
+                                           Week: {week}
+                                           {statistic}: {round(value,2)}
+                                                                            ")
+                                       ) |>
                                        ggplot(aes(value,player_display_name,
                                                   group=player_display_name)) +
                                        geom_boxplot(size=1,fill="gray50",color="gray50",
                                                     alpha=0,outlier.shape = NA) +
-                                       geom_jitter(width = 0.05,height=0.05,
-                                                   show.legend = FALSE,color="black",fill='gray70',shape=21) +
-                                       facet_wrap(~statistic,scales = "free_x",ncol=3,
-                                                  labeller = label_wrap_gen(width=15,multi_line = TRUE)) +
-                                       labs(y=NULL) +
+                                       geom_point_interactive(
+                                           aes(data_id = week,
+                                               tooltip = week_tooltip,
+                                               fill = week),
+                                           position = self$pos_lil_jitter,size = 5,
+                                           color="black",shape=21,show.legend = FALSE) +
+                                       scale_fill_distiller(palette = "BuPu",type = "div",direction = 1) +
+                                       facet_wrap(~stringr::str_replace_all(statistic,"_"," "),
+                                                  scales = "free_x",ncol=2,
+                                                  labeller = label_wrap_gen(width=self$wrap_len,
+                                                                            multi_line = TRUE)) +
+                                       labs(y=NULL,caption="Each dot is a game during the 2023 season\n'Low' colors for games early in the season, and 'high' colors for later in the season") +
                                        self$global_theme +
                                        theme(
                                            strip.text = element_text(face='bold',size = self$global_text_size),
                                            axis.text.y = element_text(size=self$global_text_size,face = "bold")
                                        )
                                },
-                               sa_distribution_plot = function(dat,sub){
-                                   dat |>
+                               sa_distribution_plot = function(dat){
+                                   p <-
+                                       dat |>
+                                       mutate(
+                                           player_tooltip = stringr::str_glue("
+                                           Player: {player_display_name}
+                                           Team: {team_abbr}
+                                           {statistic}: {round(value,2)}
+                                                                            "),
+                                           player_display_name = stringr::str_remove(player_display_name,"\\'")
+                                       ) |>
                                        ggplot(aes(value,factor(1))) +
-                                       geom_boxplot(color="gray40",size = 0.5,
-                                                    outlier.shape = NA,alpha = 0, width = 0.25) +
-                                       geom_point(color = 'black',fill = "gray70",shape=21,
-                                                  position = self$pos) +
-                                       self$global_text_repel(sub,self$pos) +
-                                       geom_point(data = sub, size = 2,color="black",fill='black',
-                                                  shape=21,position = self$pos) +
-                                       facet_wrap(~statistic,scales = "free_x",ncol=3) +
+                                       geom_boxplot(color="gray40",size = 1,
+                                                    outlier.shape = NA,alpha = 0) +
+                                       geom_point_interactive(aes(data_id = player_display_name,
+                                                                  tooltip = player_tooltip),
+                                                              color = 'black',fill = "gray70",shape=21,
+                                                              size = 5,position = self$pos_big_jitter,
+                                                              hover_nearest = TRUE) +
+                                       facet_wrap(~stringr::str_replace_all(statistic,"_"," "),
+                                                  scales = "free_x",ncol=3,
+                                                  labeller = label_wrap_gen(width=self$wrap_len,
+                                                                            multi_line = TRUE)) +
                                        labs(y=NULL) +
                                        self$global_theme +
                                        theme(
@@ -75,29 +102,41 @@ plot_object <- R6::R6Class("PlotObject",
                                            axis.text.y = element_blank(),
                                            axis.ticks.y = element_blank()
                                        )
+                                   p
                                },
-                               sw_scatterplot = function(dat,sub){
+                               sw_scatterplot = function(dat){
                                    dat |>
+                                       mutate(
+                                           player_display_name = stringr::str_remove(player_display_name,"\\'")
+                                       ) |>
                                        summarise(
-                                           var = sd(value),
-                                           avg = mean(value),
-                                           .by = c(player_display_name,statistic)
+                                           var = sd(value) |> round(digits=2),
+                                           avg = mean(value) |> round(digits=2),
+                                           .by = c(player_display_name,statistic,team_abbr)
+                                       ) |>
+                                       mutate(
+                                           player_tooltip = stringr::str_glue("
+                                           Player: {player_display_name}
+                                           Team: {team_abbr}
+                                           {statistic}
+                                           Overall: {avg}
+                                           Variation: {var}
+                                                                            ")
                                        ) |>
                                        ggplot(aes(var,avg)) +
-                                       geom_point(color='black',fill='gray70',shape=21) +
-                                       geom_point(data=sub |> summarise(
-                                           var = sd(value),
-                                           avg = mean(value),
-                                           .by = c(player_display_name,statistic)
-                                       )) +
-                                       self$global_text_repel(sub |> summarise(
-                                           var = sd(value),
-                                           avg = mean(value),
-                                           .by = c(player_display_name,statistic)
-                                       ),position_identity()) +
-                                       facet_wrap(~statistic,scales="free",ncol=3) +
+                                       geom_smooth(method='lm',se=FALSE,color='red',linetype='dashed',
+                                                   formula = 'y ~ x') +
+                                       geom_point_interactive(aes(data_id=player_display_name,
+                                                                  tooltip=player_tooltip),
+                                                              color='black',fill='gray70',shape=21,
+                                                              hover_nearest = TRUE,size = 5) +
+                                       facet_wrap(~stringr::str_replace_all(statistic,"_"," "),
+                                                  scales="free",ncol=3,
+                                                  labeller = label_wrap_gen(width=self$wrap_len,
+                                                                            multi_line = TRUE)) +
                                        scale_x_continuous(limits = c(0,NA)) +
-                                       labs(x='Variability in Performance',y="Average Performance") +
+                                       labs(x='Variability in Performance',y="Average Performance",
+                                            caption = 'Red dotted line indicates above or below average performance over the season') +
                                        self$global_theme +
                                        theme(
                                            strip.text = element_text(face='bold',size = self$global_text_size)
