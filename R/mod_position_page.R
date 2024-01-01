@@ -6,7 +6,7 @@
 #'
 #' @noRd
 #'
-#' @importFrom shiny NS tagList selectizeInput plotOuput
+#' @importFrom shiny NS tagList selectizeInput plotOutput
 #' @importFrom bslib tooltip sidebar layout_sidebar accordion accordion_panel
 #' @importFrom bsicons bs_icon
 mod_position_page_ui <- function(id){
@@ -61,7 +61,7 @@ mod_position_page_ui <- function(id){
 #' position_page Server Functions
 #'
 #' @noRd
-#' @importFrom shiny reactive req renderPlot I updateSelectizeInput observeEvent
+#' @importFrom shiny reactive req renderPlot updateSelectizeInput observeEvent
 #' @importFrom bslib update_tooltip
 #' @importFrom stringr str_glue
 #' @importFrom dplyr select all_of filter
