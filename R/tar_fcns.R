@@ -1,4 +1,5 @@
 get_season_data <- function(type,stattype){
+    week <- player_position <- field <- description <- NULL
     pos_filter <- switch(stattype,
                          'passing' = 'QB',
                          'receiving' = 'WR',
