@@ -1,12 +1,12 @@
 Package: nfldatadashboard
 Title: NFL Player Dashboard
-Version: 0.0.0.9000
+Version: 0.1.0
 Authors@R: 
     person(given = "Nicholas",
            family = "Giangreco",
            role = c("aut", "cre"),
            email = "nick.giangreco@gmail.com")
-Description: Quickly retrieves and interactively compares performance statistics for NFL players. Comparisons are targeted within quarterbacks, wide receivers, and running backs. The shiny dashboard allows for easy comparison of player's performance at each position over the season.
+Description: Quickly retrieves and interactively compares performance statistics for NFL players. Comparisons are targeted within quarterbacks, wide receivers, and running backs. The shiny dashboard allows for easy comparison of player's performance at each position over the season. Made as a hobby project to learn about NFL data.
 License: MIT + file LICENSE
 Imports: 
     config (>= 0.3.2),
@@ -14,11 +14,19 @@ Imports:
     pkgload,
     shiny (>= 1.8.0),
     ggplot2,
+    scico,
     ggrepel,
     targets,
+    bslib (>= 0.6.1),
+    bsicons,
+    labelled,
+    nflreadr,
+    tibble,
+    tidyr,
+    forcats,
     dplyr,
     stringr,
     purrr
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 7.1.1
+RoxygenNote: 7.2.3
