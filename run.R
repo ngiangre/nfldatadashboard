@@ -5,6 +5,8 @@
 # See https://books.ropensci.org/targets/hpc.html
 # to learn about your options.
 
+# rerunning targets network for up-to-date data
+tar_invalidate(dplyr::everything())
 targets::tar_make()
 # targets::tar_make_clustermq(workers = 2) # nolint
 # targets::tar_make_future(workers = 2) # nolint
