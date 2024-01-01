@@ -1,13 +1,19 @@
-#' data_object
+#' Data Object for nfldatadashboard
 #'
-#' @description A fct function
+#' @description A fct function to store the various data tables and extraction
+#' functions used in the dashboard
 #'
-#' @return The return value, if any, from executing the function.
+#' @return object with class of type 'DataObject'
 #'
+#' @importFrom shiny tags
+#' @importFrom targets tar_objects tar_read_raw
+#' @importFrom dplyr starts_with mutate all_of select contains pull
+#' @importFrom purrr map map_chr reduce pluck
 #' @noRd
 #' @examples
 #' data_obj <- data_object$new()
-#'
+#' data_obj$get_common_vars()
+#' purrr::map(c('qb','wr','rb'),~{data_obj$get_position_vars(.x)})
 data_object <- R6::R6Class("DataObject",
                            public = list(
                                get_common_vars = function(){
@@ -32,7 +38,7 @@ data_object <- R6::R6Class("DataObject",
                                },
                                get_named_position_vars = function(pos){
                                    tmp <-
-                                       purrr::map(data_obj$get_position_season_data(pos,'sa'),
+                                       purrr::map(self$get_position_season_data(pos,'sa'),
                                                   ~attr(.x,"label"))
                                    vars_named <- tmp[!(names(tmp) %in% self$get_common_vars())]
                                    named_vars <- names(vars_named)
