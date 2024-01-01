@@ -11,3 +11,9 @@ $run_dev.*
 ^rsconnect$
 ^LICENSE\.md$
 ^README\.Rmd$
+^Plots\.Rmd$
+run.R
+run.sh
+_targets
+_targets.R
+.renvignore
