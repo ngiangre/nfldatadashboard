@@ -21,7 +21,8 @@ mod_homepage_ui <- function(id){
                              "Dashboard Goal: Visualize NFL player's performance.",
                              "1) Select players and performance indicators.",
                              "2) Compare player performance overall and across games.",
-                             "(Future versions: More positions, predict fantasy points, construct fantasy teams.)"
+                             "See the left sidebar for performance indicators with descriptions.",
+                             "(Future versions: More positions, multivariate statistics, predict fantasy points, construct fantasy teams.)"
                              )
   )
 }
