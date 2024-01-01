@@ -70,6 +70,7 @@ mod_position_page_server <- function(id,data_obj,ptype = c('qb','wr','rb')){
   ptype <- match.arg(ptype)
   moduleServer( id, function(input, output, session){
     ns <- session$ns
+    player_display_name <- NULL
     alldat_sw <- reactive({
         req(input$stat)
         data_obj$get_position_season_data(ptype,'sw') |>
