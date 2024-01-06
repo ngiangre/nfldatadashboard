@@ -114,7 +114,7 @@ mod_position_page_server <- function(id,data_obj,ptype = c('qb','wr','rb')){
     })
     output$sw_boxplots <- renderGirafe({
         req(nrow(subdat_sw())>=1)
-        p <- plot_obj$sw_boxplots(subdat_sw())
+        p <- plot_obj$sw_week_scatterplot(subdat_sw())
         girafe(code = print(p),
                width_svg = 15, height_svg = 15,
                options = list(
