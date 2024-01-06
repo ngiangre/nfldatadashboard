@@ -5,7 +5,7 @@
 #' @return The return value, if any, from executing the function.
 #'
 #' @import ggplot2
-#' @importFrom ggiraph geom_point_interactive
+#' @importFrom ggiraph geom_point_interactive geom_smooth_interactive
 #' @importFrom dplyr mutate summarise arrange desc
 #' @importFrom forcats fct_inorder
 #' @importFrom stringr str_replace str_remove
@@ -45,6 +45,11 @@ plot_object <- R6::R6Class("PlotObject",
                                    color_library <-
                                        purrr::map(pals,~{palette.colors(palette = .x)})
                                    color_library[['R3']] <- NULL
+                                   color_library <-
+                                       color_library[c(
+                                           'Okabe-Ito','Alphabet',"Polychrome 36",'R4',
+                                           "Tableau 10",'Dark2','Set1','Set2','Set3'
+                                       )]
                                    color_library <-
                                        color_library |>
                                        unlist() |>
@@ -113,26 +118,43 @@ plot_object <- R6::R6Class("PlotObject",
                                            Player: {player_display_name}
                                            Week: {week}
                                            {statistic}: {round(value,2)}
-                                                                            ")
+                                                                            "),
+                                           smooth_tooltip = stringr::str_glue("
+                                           Performance Trend Across Season
+                                           Player: {player_display_name}
+                                                                              ")
                                        ) |>
                                        dplyr::arrange(player_display_name,week) |>
-                                       ggplot(aes(value,week,group=player_display_name)) +
-                                       geom_path() +
-                                       geom_point(aes(shape=player_display_name,
-                                                      color=player_display_name),
-                                                  size = 3) +
-                                       scale_y_continuous(breaks = scales::breaks_width(1)) +
+                                       ggplot(aes(week,value,group=player_display_name)) +
+                                       geom_smooth_interactive(method='lm',formula='y ~ x',se = FALSE,
+                                                   mapping=aes(color=player_display_name,
+                                                               tooltip=smooth_tooltip,
+                                                               data_id=player_display_name),
+                                                   alpha = 0.5,linewidth=2,
+                                                   show.legend = FALSE) +
+                                       geom_path(aes(color=player_display_name),
+                                                 linewidth=.5,show.legend = FALSE) +
+                                       geom_point_interactive(aes(
+                                           data_id = interaction(player_display_name,week),
+                                           tooltip = week_tooltip,
+                                           shape=player_display_name,
+                                           color=player_display_name),
+                                           size = 3) +
+                                       scale_x_continuous(breaks = scales::breaks_width(1)) +
                                        scale_color_manual(values = self$generate_discrete_colors(
                                           dplyr::n_distinct(dat$player_display_name)
                                        )) +
-                                       guides(shape=guide_legend(title = NULL),
+                                       guides(shape=guide_legend(title = NULL,override.aes = list(size=5)),
                                               color=guide_legend(title = NULL)) +
                                        facet_wrap(~stringr::str_replace_all(statistic,"_"," "),
-                                                  scales = "free_x",ncol=3,
-                                                  labeller = label_wrap_gen(width=10, #self$wrap_len,
+                                                  scales = 'free',ncol=3,
+                                                  labeller = label_wrap_gen(width=self$wrap_len,
                                                                             multi_line = TRUE)) +
+                                       labs(caption="Each dot is a game during the 2023 season for the selected players.") +
                                        self$global_theme +
                                        theme(
+                                           strip.text = element_text(face='bold',size = self$global_text_size),
+                                           legend.text = element_text(size = self$global_text_size),
                                            legend.position = "top"
                                        )
                                },
