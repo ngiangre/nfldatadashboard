@@ -25,6 +25,7 @@ mod_position_page_ui <- function(id){
               bslib::tooltip(list("Side-by-Side Player Comparisons",bsicons::bs_icon('info-circle')),
                              "Two plots displaying the average performance of the selected players."
               ),
+              tags$b("Select players to compare performance overall and across games. Performance statistics are described within the left sidebar. Hover over label icons for more information. Use cases: 1) Compare the performance of players in each team for the next football game, 2) Show player performance for my favorite player during the 2023 NFL season, 3) Visusalize how player performance varied game-by-game."),
               selectizeInput(ns('player'),label = bslib::tooltip(
                   trigger = list("Select Player(s)",bsicons::bs_icon('info-circle')
                   ),"Message",id = ns("player_tooltip")),choices=NULL,multiple = TRUE,
@@ -47,6 +48,7 @@ mod_position_page_ui <- function(id){
                              "Two plots displaying all players in this position (gray dots).",
                              "Hover over dots to label players and performance."
               ),
+              tags$b("Exploratory comparison of player performance in the 2023 NFL season. Performance statistics are described within the left sidebar. Hover over the points in the plots, which are individual players, for more information. Use cases: 1) Identify players with the highest performace for a statistic, 2) Compare player performance across many performance statistics, 3) Identify consistently performant players across maany performance statistics."),
               bslib::accordion(
                   open = c("Overall Performance","Overall Performance vs. Season Variability"),
                   bslib::accordion_panel(
