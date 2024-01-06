@@ -10,6 +10,25 @@
 #' @importFrom forcats fct_inorder
 #' @importFrom stringr str_replace str_remove
 #' @noRd
+#' @examples
+#' plotr6 <- plot_object$new()
+#' datar6 <- data_object$new()
+#'
+#' indicators <- datar6$get_position_vars('qb')[1:3]
+#' dat <-
+#' datar6$get_position_season_data('qb','sw') |>
+#'     dplyr::select(
+#'         dplyr::all_of(c("player_display_name","team_abbr",'week',
+#'                         indicators))
+#'     ) |>
+#'     tidyr::pivot_longer(
+#'         cols = dplyr::all_of(indicators),
+#'         names_to = "statistic"
+#'     ) |>
+#'     dplyr::filter(player_display_name %in% c( datar6$get_position_players('qb')[1:2] ))
+#'
+#' plotr6$sw_boxplots(dat)
+#' plotr6$sw_week_scatterplot(dat)
 plot_object <- R6::R6Class("PlotObject",
                            public = list(
                                global_text_size = 16,
@@ -17,6 +36,21 @@ plot_object <- R6::R6Class("PlotObject",
                                pos_lil_jitter = position_jitter(width = 0.1,height=0.1,seed = 0),
                                pos_big_jitter = position_jitter(width = 0.4,height=0.4,seed = 0),
                                wrap_len = 25,
+                               generate_discrete_colors = function(n){
+                                   stopifnot(is.numeric(n))
+                                   n <- floor(n)
+                                   stopifnot(n>0)
+                                   pals <- palette.pals()
+                                   names(pals) <- pals
+                                   color_library <-
+                                       purrr::map(pals,~{palette.colors(palette = .x)})
+                                   color_library[['R3']] <- NULL
+                                   color_library <-
+                                       color_library |>
+                                       unlist() |>
+                                       unname()
+                                   color_library[seq(1,n,1)]
+                               },
                                sa_heatmap = function(dat){
                                    dat |>
                                        mutate(statistic = factor(statistic)) |>
@@ -70,6 +104,36 @@ plot_object <- R6::R6Class("PlotObject",
                                        theme(
                                            strip.text = element_text(face='bold',size = self$global_text_size),
                                            axis.text.y = element_text(size=self$global_text_size,face = "bold")
+                                       )
+                               },
+                               sw_week_scatterplot = function(dat){
+                                   dat |>
+                                       mutate(
+                                           week_tooltip = stringr::str_glue("
+                                           Player: {player_display_name}
+                                           Week: {week}
+                                           {statistic}: {round(value,2)}
+                                                                            ")
+                                       ) |>
+                                       dplyr::arrange(player_display_name,week) |>
+                                       ggplot(aes(value,week,group=player_display_name)) +
+                                       geom_path() +
+                                       geom_point(aes(shape=player_display_name,
+                                                      color=player_display_name),
+                                                  size = 3) +
+                                       scale_y_continuous(breaks = scales::breaks_width(1)) +
+                                       scale_color_manual(values = self$generate_discrete_colors(
+                                          dplyr::n_distinct(dat$player_display_name)
+                                       )) +
+                                       guides(shape=guide_legend(title = NULL),
+                                              color=guide_legend(title = NULL)) +
+                                       facet_wrap(~stringr::str_replace_all(statistic,"_"," "),
+                                                  scales = "free_x",ncol=3,
+                                                  labeller = label_wrap_gen(width=10, #self$wrap_len,
+                                                                            multi_line = TRUE)) +
+                                       self$global_theme +
+                                       theme(
+                                           legend.position = "top"
                                        )
                                },
                                sa_distribution_plot = function(dat){
