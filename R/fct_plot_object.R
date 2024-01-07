@@ -135,6 +135,20 @@ plot_object <- R6::R6Class("PlotObject",
                                },
                                sw_week_scatterplot = function(dat){
                                    dat |>
+                                       dplyr::left_join(
+                                           dat |>
+                                               mutate(nvalue = ((value - min(value))/(max(value)-min(value))),
+                                                      .by=c(statistic,player_display_name)) |>
+                                               dplyr::summarise(mod = list(lm(value ~ week)),
+                                                                .by=c(statistic,player_display_name)
+                                               ) |>
+                                               dplyr::mutate(
+                                                   coef = purrr::map_dbl(mod,~{coefficients(.x)['week']}),
+                                                   chg = purrr::map_dbl(mod,~{exp(coefficients(.x)['week'])-1}),
+                                                   perc_chg = scales::percent(round(chg,3))
+                                               ),
+                                           by = c('statistic','player_display_name')
+                                       ) |>
                                        mutate(
                                            week_tooltip = stringr::str_glue("
                                            Player: {player_display_name}
@@ -142,15 +156,21 @@ plot_object <- R6::R6Class("PlotObject",
                                            {statistic}: {round(value,2)}
                                                                             "),
                                            smooth_tooltip = stringr::str_glue("
-                                           Performance Trend Across Season
                                            Player: {player_display_name}
+                                           {round(coef,2)} {ifelse(coef>0,'more','less')} {statistic}
+                                           across season
+                                                                              "),
+                                           smooth_perc_tooltip = stringr::str_glue("
+                                           Player: {player_display_name}
+                                           {perc_chg} {ifelse(chg>0,'increased','decreased')} {statistic}
+                                           across season
                                                                               ")
                                        ) |>
                                        dplyr::arrange(player_display_name,week) |>
                                        ggplot(aes(week,value,group=player_display_name)) +
                                        geom_smooth_interactive(method='lm',formula='y ~ x',se = FALSE,
                                                    mapping=aes(color=player_display_name,
-                                                               tooltip=smooth_tooltip,
+                                                               tooltip=smooth_perc_tooltip,
                                                                data_id=player_display_name),
                                                    alpha = 0.5,linewidth=2,
                                                    show.legend = FALSE) +
