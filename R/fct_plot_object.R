@@ -15,7 +15,7 @@
 #' datar6 <- data_object$new()
 #'
 #' indicators <- datar6$get_position_vars('qb')[1:3]
-#' dat <-
+#' dat_sw <-
 #' datar6$get_position_season_data('qb','sw') |>
 #'     dplyr::select(
 #'         dplyr::all_of(c("player_display_name","team_abbr",'week',
@@ -25,10 +25,25 @@
 #'         cols = dplyr::all_of(indicators),
 #'         names_to = "statistic"
 #'     ) |>
-#'     dplyr::filter(player_display_name %in% c( datar6$get_position_players('qb')[1:2] ))
+#'     dplyr::filter(player_display_name %in% c( datar6$get_position_players('qb')[1:3] ))
 #'
-#' plotr6$sw_boxplots(dat)
-#' plotr6$sw_week_scatterplot(dat)
+#'
+#' plotr6$sw_boxplots(dat_sw)
+#' plotr6$sw_week_scatterplot(dat_sw)
+#'
+#' dat_sa <-
+#' datar6$get_position_season_data('qb','sa') |>
+#'     dplyr::select(
+#'         dplyr::all_of(c("player_display_name","team_abbr",
+#'                         indicators))
+#'     ) |>
+#'     tidyr::pivot_longer(
+#'         cols = dplyr::all_of(indicators),
+#'         names_to = "statistic"
+#'     ) |>
+#'     dplyr::filter(player_display_name %in% c( datar6$get_position_players('qb')[1:3] ))
+#'
+#' plotr6$sa_heatmap(dat_sa)
 plot_object <- R6::R6Class("PlotObject",
                            public = list(
                                global_text_size = 16,
@@ -59,9 +74,15 @@ plot_object <- R6::R6Class("PlotObject",
                                sa_heatmap = function(dat){
                                    dat |>
                                        mutate(statistic = factor(statistic)) |>
-                                       arrange(desc(statistic)) |>
-                                       mutate(zvalue = (value - mean(value))/sd(value),.by = statistic) |>
-                                       ggplot(aes(player_display_name,
+                                       mutate(
+                                           zvalue = (value - mean(value))/(sd(value)),
+                                           .by = statistic
+                                       ) |>
+                                       mutate(
+                                           player_label = paste0(player_display_name,"\n(",team_abbr,")")
+                                       ) |>
+                                       arrange(desc(statistic),team_abbr) |>
+                                       ggplot(aes(player_label,
                                                   forcats::fct_inorder(statistic),fill=zvalue)) +
                                        geom_tile() +
                                        scale_fill_gradient2(
