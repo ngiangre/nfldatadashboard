@@ -160,7 +160,7 @@ plot_object <- R6::R6Class("PlotObject",
                                            tooltip = week_tooltip,
                                            shape=player_display_name,
                                            color=player_display_name),
-                                           size = 3) +
+                                           size = 4) +
                                        scale_x_continuous(breaks = scales::breaks_width(1)) +
                                        scale_color_manual(values = self$generate_discrete_colors(
                                           dplyr::n_distinct(dat$player_display_name)

@@ -118,7 +118,8 @@ mod_position_page_server <- function(id,data_obj,ptype = c('qb','wr','rb')){
         girafe(code = print(p),
                width_svg = 15, height_svg = 15,
                options = list(
-                   opts_hover(css = "fill:red;stroke:black;cursor:pointer;")
+                   opts_hover(css = "fill:red;stroke:black;cursor:pointer;"),
+                   opts_hover_inv(css = "opacity:0.1")
                ))
     })
     output$sa_distribution_plot <- renderGirafe({
