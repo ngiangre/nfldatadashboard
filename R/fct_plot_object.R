@@ -78,11 +78,12 @@ plot_object <- R6::R6Class("PlotObject",
                                            zvalue = (value - mean(value))/(sd(value)),
                                            .by = statistic
                                        ) |>
-                                       mutate(
-                                           player_label = paste0(player_display_name,"\n(",team_abbr,")")
-                                       ) |>
                                        arrange(desc(statistic),team_abbr) |>
-                                       ggplot(aes(player_label,
+                                       mutate(
+                                           player_label = paste0(player_display_name,"\n(",team_abbr,")") |>
+                                               factor()
+                                       ) |>
+                                       ggplot(aes(forcats::fct_inorder(player_label),
                                                   forcats::fct_inorder(statistic),fill=zvalue)) +
                                        geom_tile() +
                                        scale_fill_gradient2(
