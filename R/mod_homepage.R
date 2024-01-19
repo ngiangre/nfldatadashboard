@@ -22,6 +22,7 @@ mod_homepage_ui <- function(id){
       underline = TRUE,
       bslib::nav_panel(title="Quarterbacks",mod_position_page_ui(ns("qb_page_1"))),
       bslib::nav_panel(title="Wide Receivers",mod_position_page_ui(ns("wr_page_1"))),
+      bslib::nav_panel(title="Tight Ends",mod_position_page_ui(ns("te_page_1"))),
       bslib::nav_panel(title="Running Backs",mod_position_page_ui(ns("rb_page_1"))),
       bslib::nav_spacer(),
       bslib::nav_item(link_github),
@@ -44,6 +45,7 @@ mod_homepage_server <- function(id){
     data_obj <- data_object$new()
     mod_position_page_server("qb_page_1",data_obj,ptype="qb")
     mod_position_page_server("wr_page_1",data_obj,ptype="wr")
+    mod_position_page_server("te_page_1",data_obj,ptype="te")
     mod_position_page_server("rb_page_1",data_obj,ptype="rb")
   })
 }

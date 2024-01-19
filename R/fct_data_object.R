@@ -13,7 +13,7 @@
 #' @examples
 #' data_obj <- data_object$new()
 #' data_obj$get_common_vars()
-#' purrr::map(c('qb','wr','rb'),~{data_obj$get_position_vars(.x)})
+#' purrr::map(c('qb','wr','te','rb'),~{data_obj$get_position_vars(.x)})
 data_object <- R6::R6Class("DataObject",
                            public = list(
                                get_common_vars = function(){
@@ -25,7 +25,7 @@ data_object <- R6::R6Class("DataObject",
                                        purrr::reduce(intersect)
                                },
                                get_position_vars = function(pos){
-                                   stopifnot(pos %in% c('qb','wr','rb'))
+                                   stopifnot(pos %in% private$get_available_positions())
                                    purrr::map(
                                        targets::tar_objects(
                                            dplyr::starts_with(pos)
@@ -37,6 +37,7 @@ data_object <- R6::R6Class("DataObject",
                                        setdiff(self$get_common_vars())
                                },
                                get_named_position_vars = function(pos){
+                                   stopifnot(pos %in% self$get_available_positions())
                                    tmp <-
                                        purrr::map(self$get_position_season_data(pos,'sa'),
                                                   ~attr(.x,"label"))
@@ -53,7 +54,7 @@ data_object <- R6::R6Class("DataObject",
                                    sort(named_vars,decreasing = FALSE)
                                },
                                get_position_players = function(pos){
-                                   stopifnot(pos %in% c('qb','wr','rb'))
+                                   stopifnot(pos %in% self$get_available_positions())
                                    purrr::map(
                                        targets::tar_objects(
                                            dplyr::starts_with(pos)
@@ -65,7 +66,7 @@ data_object <- R6::R6Class("DataObject",
                                        purrr::reduce(intersect)
                                },
                                get_position_named_players = function(pos){
-                                   stopifnot(pos %in% c('qb','wr','rb'))
+                                   stopifnot(pos %in% self$get_available_positions())
                                    names_ <-
                                        purrr::map(
                                            targets::tar_objects(
@@ -82,14 +83,20 @@ data_object <- R6::R6Class("DataObject",
                                    vals_[order_]
                                },
                                get_position_season_data = function(pos,stype){
-                                   stopifnot(pos %in% c('qb','wr','rb'))
-                                   stopifnot(stype %in% c('sa','sw'))
+                                   stopifnot(pos %in% self$get_available_positions())
+                                   stopifnot(stype %in% self$get_available_season_data())
                                    targets::tar_objects(
                                        dplyr::starts_with(pos) &
                                            dplyr::contains(stype)
                                    ) |>
                                        targets::tar_read_raw()
+                               },
+                               get_available_positions = function(){
+                                   c('qb','wr','te','rb')
+                               },
+                               get_available_season_data = function(){
+                                   c('sa','sw')
                                }
-                           )
+                           ),
 
 )

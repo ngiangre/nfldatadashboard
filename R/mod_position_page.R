@@ -76,8 +76,8 @@ mod_position_page_ui <- function(id){
 #' @importFrom stringr str_glue
 #' @importFrom dplyr select all_of filter
 #' @importFrom tidyr pivot_longer
-mod_position_page_server <- function(id,data_obj,ptype = c('qb','wr','rb')){
-  ptype <- match.arg(ptype)
+mod_position_page_server <- function(id,data_obj,ptype){
+  stopifnot(ptype %in% data_obj$get_available_positions())
   moduleServer( id, function(input, output, session){
     ns <- session$ns
     player_display_name <- NULL
