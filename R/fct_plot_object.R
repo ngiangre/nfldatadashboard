@@ -6,7 +6,7 @@
 #'
 #' @import ggplot2
 #' @importFrom ggiraph geom_point_interactive geom_smooth_interactive
-#' @importFrom dplyr mutate summarise arrange desc
+#' @importFrom dplyr mutate summarise arrange desc if_else
 #' @importFrom forcats fct_inorder
 #' @importFrom stringr str_replace str_remove
 #' @noRd
@@ -46,8 +46,8 @@
 #' plotr6$sa_heatmap(dat_sa)
 plot_object <- R6::R6Class("PlotObject",
                            public = list(
-                               global_text_size = 16,
-                               global_theme = theme_classic(base_size = 16),
+                               global_text_size = 20,
+                               get_base_theme = function(){theme_classic(base_size = self$global_text_size)},
                                pos_lil_jitter = position_jitter(width = 0.1,height=0.1,seed = 0),
                                pos_big_jitter = position_jitter(width = 0.4,height=0.4,seed = 0),
                                wrap_len = 25,
@@ -62,8 +62,8 @@ plot_object <- R6::R6Class("PlotObject",
                                    color_library[['R3']] <- NULL
                                    color_library <-
                                        color_library[c(
-                                           'Okabe-Ito','Alphabet',"Polychrome 36",'R4',
-                                           "Tableau 10",'Dark2','Set1','Set2','Set3'
+                                           'Set2','Alphabet',"Tableau 10",'R4','Set3',
+                                           'Okabe-Ito','Dark2',"Polychrome 36",'Set1','Dark2'
                                        )]
                                    color_library <-
                                        color_library |>
@@ -95,7 +95,7 @@ plot_object <- R6::R6Class("PlotObject",
                                                  color='black',fill='white',fontface='bold') +
                                        scale_x_discrete(position = "top",labels = label_wrap_gen(width=5)) +
                                        labs(x=NULL,y=NULL,caption="'Bluer' colors indicate lower performance compared to other players, 'redder' colors indicate higher performance compared to other players") +
-                                       self$global_theme +
+                                       self$get_base_theme() +
                                        theme(
                                            legend.position = "none",
                                            axis.text.x = element_text(size=self$global_text_size,face = "bold"),
@@ -127,7 +127,7 @@ plot_object <- R6::R6Class("PlotObject",
                                                   labeller = label_wrap_gen(width=self$wrap_len,
                                                                             multi_line = TRUE)) +
                                        labs(y=NULL,caption="Each dot is a game during the 2023 season\n'Low' colors for games early in the season, and 'high' colors for later in the season") +
-                                       self$global_theme +
+                                       self$get_base_theme() +
                                        theme(
                                            strip.text = element_text(face='bold',size = self$global_text_size),
                                            axis.text.y = element_text(size=self$global_text_size,face = "bold")
@@ -193,15 +193,24 @@ plot_object <- R6::R6Class("PlotObject",
                                                   labeller = label_wrap_gen(width=self$wrap_len,
                                                                             multi_line = TRUE)) +
                                        labs(caption="Each dot is a game during the 2023 season for the selected players.") +
-                                       self$global_theme +
+                                       self$get_base_theme() +
                                        theme(
                                            strip.text = element_text(face='bold',size = self$global_text_size),
                                            legend.text = element_text(size = self$global_text_size),
                                            legend.position = "top"
                                        )
                                },
-                               sa_distribution_plot = function(dat){
-                                   p <-
+                               sa_distribution_plot = function(dat,players){
+                                   if(length(players)==0){
+                                       fill_values <- "gray40"
+                                       fill_limits <- ""
+                                       fill_labels <- "All players"
+                                   }else{
+                                       fill_values <- c("gray40",self$generate_discrete_colors(length(players)))
+                                       fill_limits <- c("All players",players)
+                                       fill_labels <- c("All players",players)
+                                   }
+                                   dat_labelled <-
                                        dat |>
                                        mutate(
                                            player_tooltip = stringr::str_glue("
@@ -209,31 +218,57 @@ plot_object <- R6::R6Class("PlotObject",
                                            Team: {team_abbr}
                                            {statistic}: {round(value,2)}
                                                                             "),
-                                           player_display_name = stringr::str_remove(player_display_name,"\\'")
+                                           player_display_name = stringr::str_remove(player_display_name,"\\'"),
+                                           point_size = dplyr::if_else(player_display_name %in% players,10,5)
                                        ) |>
+                                       arrange(point_size)
+                                   p <-
+                                       dat_labelled |>
                                        ggplot(aes(value,factor(1))) +
                                        geom_boxplot(color="gray40",size = 1,
                                                     outlier.shape = NA,alpha = 0) +
                                        geom_point_interactive(aes(data_id = player_display_name,
-                                                                  tooltip = player_tooltip),
-                                                              color = 'black',fill = "gray70",shape=21,
-                                                              size = 5,position = self$pos_big_jitter,
+                                                                  tooltip = player_tooltip,
+                                                                  fill = player_display_name,
+                                                                  size = point_size),
+                                                              color = 'black',
+                                                              alpha = .9,
+                                                              shape=21,
+                                                              position = self$pos_big_jitter,
                                                               hover_nearest = TRUE) +
+                                       scale_fill_manual(values = fill_values,
+                                                         limits = fill_limits,
+                                                         labels = fill_labels) +
+                                       scale_size_identity() +
+                                       guides(fill = guide_legend(title=NULL,nrow=1,
+                                                                  override.aes = list(size = 5))) +
                                        facet_wrap(~stringr::str_replace_all(statistic,"_"," "),
                                                   scales = "free_x",ncol=3,
                                                   labeller = label_wrap_gen(width=self$wrap_len,
                                                                             multi_line = TRUE)) +
                                        labs(y=NULL) +
-                                       self$global_theme +
+                                       self$get_base_theme() +
                                        theme(
+                                           legend.position = "top",
+                                           legend.text = element_text(size = self$global_text_size),
                                            strip.text = element_text(face='bold',size = self$global_text_size),
                                            axis.text.y = element_blank(),
                                            axis.ticks.y = element_blank()
                                        )
                                    p
                                },
-                               sw_scatterplot = function(dat){
-                                   dat |>
+                               sw_scatterplot = function(dat,players){
+                                   if(length(players)==0){
+                                       fill_values <- "gray40"
+                                       fill_limits <- ""
+                                       fill_labels <- "All players"
+                                   }else{
+                                       fill_values <- c("gray40",self$generate_discrete_colors(length(players)))
+                                       fill_limits <- c("All players",players)
+                                       fill_labels <- c("All players",players)
+                                   }
+                                   dat_labelled <-
+                                       dat |>
                                        mutate(
                                            player_display_name = stringr::str_remove(player_display_name,"\\'")
                                        ) |>
@@ -249,15 +284,26 @@ plot_object <- R6::R6Class("PlotObject",
                                            {statistic}
                                            Overall: {avg}
                                            Variation: {var}
-                                                                            ")
+                                                                            "),
+                                           point_size = dplyr::if_else(player_display_name %in% players,10,5)
                                        ) |>
+                                       arrange(point_size)
+                                   dat_labelled |>
                                        ggplot(aes(var,avg)) +
                                        geom_smooth(method='lm',se=FALSE,color='red',linetype='dashed',
                                                    formula = 'y ~ x') +
                                        geom_point_interactive(aes(data_id=player_display_name,
-                                                                  tooltip=player_tooltip),
-                                                              color='black',fill='gray70',shape=21,
-                                                              hover_nearest = TRUE,size = 5) +
+                                                                  tooltip=player_tooltip,
+                                                                  fill=player_display_name,
+                                                                  size = point_size),
+                                                              color='black',alpha = 0.9,shape=21,
+                                                              hover_nearest = TRUE) +
+                                       scale_fill_manual(values = fill_values,
+                                                         limits = fill_limits,
+                                                         labels = fill_labels) +
+                                       scale_size_identity() +
+                                       guides(fill = guide_legend(title=NULL,nrow=1,
+                                                                  override.aes = list(size = 5))) +
                                        facet_wrap(~stringr::str_replace_all(statistic,"_"," "),
                                                   scales="free",ncol=3,
                                                   labeller = label_wrap_gen(width=self$wrap_len,
@@ -265,8 +311,10 @@ plot_object <- R6::R6Class("PlotObject",
                                        scale_x_continuous(limits = c(0,NA)) +
                                        labs(x='Variability in Performance',y="Average Performance",
                                             caption = 'Red dotted line indicates above or below average performance over the season') +
-                                       self$global_theme +
+                                       self$get_base_theme() +
                                        theme(
+                                           legend.position = 'top',
+                                           legend.text = element_text(size = self$global_text_size),
                                            strip.text = element_text(face='bold',size = self$global_text_size)
                                        )
                                }

@@ -26,9 +26,9 @@ mod_position_page_ui <- function(id){
                              "Two plots displaying the average performance of the selected players."
               ),
               tags$b("Select players to compare performance overall and across games. Performance statistics are described within the left sidebar. Hover over label icons for more information. Use cases: 1) Compare the performance of players in each team for the next football game, 2) Show player performance for my favorite player during the 2023 NFL season, 3) Visusalize how player performance varied game-by-game."),
-              selectizeInput(ns('player'),label = bslib::tooltip(
+              selectizeInput(ns('player_1'),label = bslib::tooltip(
                   trigger = list("Select Player(s)",bsicons::bs_icon('info-circle')
-                  ),"Message",id = ns("player_tooltip")),choices=NULL,multiple = TRUE,
+                  ),"Message",id = ns("player_tooltip_1")),choices=NULL,multiple = TRUE,
                   width = "100%"),
               bslib::accordion(
                   open = c("Side-By-Side Overall Performance","Week-By-Week Season Performance"),
@@ -49,6 +49,10 @@ mod_position_page_ui <- function(id){
                              "Hover over dots to label players and performance."
               ),
               tags$b("Exploratory comparison of player performance in the 2023 NFL season. Performance statistics are described within the left sidebar. Hover over the points in the plots, which are individual players, for more information. Use cases: 1) Identify players with the highest performace for a statistic, 2) Compare player performance across many performance statistics, 3) Identify consistently performant players across maany performance statistics."),
+              selectizeInput(ns('player_2'),label = bslib::tooltip(
+                  trigger = list("Select Player(s)",bsicons::bs_icon('info-circle')
+                  ),"Message",id = ns("player_tooltip_2")),choices=NULL,multiple = TRUE,
+                  width = "100%"),
               bslib::accordion(
                   open = c("Overall Performance","Overall Performance vs. Season Variability"),
                   bslib::accordion_panel(
@@ -93,7 +97,7 @@ mod_position_page_server <- function(id,data_obj,ptype){
                 names_to = "statistic"
             )
     })
-    subdat_sw <- reactive({alldat_sw() |> filter(player_display_name %in% input$player)})
+    subdat_sw <- reactive({alldat_sw() |> filter(player_display_name %in% input$player_1)})
     alldat_sa <- reactive({
         req(input$stat)
         data_obj$get_position_season_data(ptype,'sa') |>
@@ -106,7 +110,7 @@ mod_position_page_server <- function(id,data_obj,ptype){
                 names_to = "statistic"
             )
     })
-    subdat_sa <- reactive({alldat_sa() |> filter(player_display_name %in% input$player)})
+    subdat_sa <- reactive({alldat_sa() |> filter(player_display_name %in% input$player_1)})
     plot_obj = plot_object$new()
     output$sa_heatmap <- renderPlot({
         req(nrow(subdat_sa())>=1)
@@ -124,7 +128,7 @@ mod_position_page_server <- function(id,data_obj,ptype){
     })
     output$sa_distribution_plot <- renderGirafe({
         req(nrow(alldat_sa())>=1)
-        p <- plot_obj$sa_distribution_plot(alldat_sa())
+        p <- plot_obj$sa_distribution_plot(alldat_sa(),input$player_2)
         girafe(code = print(p),
                width_svg = 15, height_svg = 15,
                options = list(
@@ -134,7 +138,7 @@ mod_position_page_server <- function(id,data_obj,ptype){
     })
     output$sw_scatterplot <- renderGirafe({
         req(nrow(alldat_sw())>=1)
-        p <- plot_obj$sw_scatterplot(alldat_sw())
+        p <- plot_obj$sw_scatterplot(alldat_sw(),input$player_2)
         girafe(code = print(p),
                width_svg = 15, height_svg = 15,
                options = list(
@@ -152,11 +156,19 @@ mod_position_page_server <- function(id,data_obj,ptype){
               return '<div>' + item.label + '</div>';
             }
           }")
-    updateSelectizeInput(session = session,inputId = 'player',
+    updateSelectizeInput(session = session,inputId = 'player_1',
                          choices = data_obj$get_position_named_players(ptype),
                          options = list(render = renderSelectizeUI))
-    observeEvent(input$player_tooltip,{
-        bslib::update_tooltip('player_tooltip',
+    observeEvent(input$player_tooltip_1,{
+        bslib::update_tooltip('player_tooltip_1',
+                              stringr::str_glue("Select atleast one {stringr::str_to_upper(ptype)}. "),
+                              "Team abbreviation is in parantheses")
+    })
+    updateSelectizeInput(session = session,inputId = 'player_2',
+                         choices = data_obj$get_position_named_players(ptype),
+                         options = list(render = renderSelectizeUI))
+    observeEvent(input$player_tooltip_2,{
+        bslib::update_tooltip('player_tooltip_2',
                               stringr::str_glue("Select atleast one {stringr::str_to_upper(ptype)}. "),
                               "Team abbreviation is in parantheses")
     })
