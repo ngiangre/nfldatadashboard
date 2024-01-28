@@ -48,7 +48,7 @@ plot_object <- R6::R6Class("PlotObject",
                            public = list(
                                global_text_size = 20,
                                get_base_theme = function(){theme_classic(base_size = self$global_text_size)},
-                               pos_lil_jitter = position_jitter(width = 0.1,height=0.1,seed = 0),
+                               pos_lil_jitter = position_jitter(width = 0.1,height=0.4,seed = 0),
                                pos_big_jitter = position_jitter(width = 0.4,height=0.4,seed = 0),
                                wrap_len = 25,
                                generate_discrete_colors = function(n){
@@ -234,7 +234,7 @@ plot_object <- R6::R6Class("PlotObject",
                                                               color = 'black',
                                                               alpha = .9,
                                                               shape=21,
-                                                              position = self$pos_big_jitter,
+                                                              position = self$pos_lil_jitter,
                                                               hover_nearest = TRUE) +
                                        scale_fill_manual(values = fill_values,
                                                          limits = fill_limits,
