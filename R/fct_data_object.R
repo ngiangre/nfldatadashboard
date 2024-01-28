@@ -25,7 +25,7 @@ data_object <- R6::R6Class("DataObject",
                                        purrr::reduce(intersect)
                                },
                                get_position_vars = function(pos){
-                                   stopifnot(pos %in% private$get_available_positions())
+                                   stopifnot(pos %in% self$get_available_positions())
                                    purrr::map(
                                        targets::tar_objects(
                                            dplyr::starts_with(pos)
