@@ -3,40 +3,38 @@
 
 # nfldatadashboard
 
-<!-- badges: start -->
-<!-- badges: end -->
-
 ## Goal
 
 Interactively compare NFL player’s performance within positions. Only
-QB, WR, and RB from Next Gen Stats 2023 season using {nflreadr}.
+QB, WR, TE, and RB from Next Gen Stats 2023 season using {nflreadr}.
 
-## Outcomes
+## Target Outcomes
 
-1.  Select and compare player performance within positions
-2.  Visualize the distribution of player performance within positions
+1.  ~~Select and compare player performance within positions~~
+2.  ~~Visualize the distribution of player performance within
+    positions~~
 3.  List custom player ranking within positions
 
 ## Questions
 
-1.  How does my select player compare to other(s) across position’s
-    performance statistics?
-2.  How do players perform overall across performance statistics?
+1.  ~~How does my select player compare to other players within and
+    across position’s performance statistics?~~
+2.  ~~How do players perform overall across performance statistics?~~
 3.  What are player’s overall performance for select statistics?
 
 ## Design
 
-- 3 navbar tabs for each position
-  - Sidebar: Position statistics selection - will be passed to plots
-    below
+- 4 navbar tabs for each position
+  - Sidebar: Position statistics selection and descriptions - will be
+    passed to plots below
   - Select tab
-    - Sidebar: Players selection
+    - Players selection
     - Season-average heatmap
-    - Season-wide boxplot
+    - Season-wide boxplots - interactive
   - Explore tab
-    - Sidebar: Players selection (updated from plot interactivity too)
-    - Season-wide scatterplot - use ggiraph for interactivity
-    - Season-average histogram - add vertical lines for selected players
+    - Players selection
+    - Season-wide scatterplot - interactive
+    - Season-average vs. variance scatterplot - interactive
 
 ## Data
 
@@ -48,11 +46,13 @@ QB, WR, and RB from Next Gen Stats 2023 season using {nflreadr}.
 <u>Three positions:</u>
 
 1.  Quarterback (QB)
-2.  Running back (RB)
-3.  Wide receiver (WR)
+2.  Wide receiver (WR)
+3.  Tight End (TE)
+4.  Running back (RB)
 
 <u>Performance statistics:</u>
 
 1.  QB: 18
-2.  RB: 11
-3.  WR: 12
+2.  WR: 12
+3.  TE: 12
+4.  RB: 11
