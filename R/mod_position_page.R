@@ -15,6 +15,7 @@ mod_position_page_ui <- function(id){
   bslib::layout_sidebar(
       sidebar = bslib::sidebar(
           width = 400,open = FALSE,
+          position = "right",
           selectizeInput(ns('stat'),label = bslib::tooltip(
               trigger = list("Select Performance Indicator(s)",bsicons::bs_icon('info-circle')
               ),"Message",id = ns("stat_tooltip")),choices=NULL,multiple = TRUE)
@@ -80,7 +81,7 @@ mod_position_page_ui <- function(id){
 #' @importFrom stringr str_glue
 #' @importFrom dplyr select all_of filter
 #' @importFrom tidyr pivot_longer
-mod_position_page_server <- function(id,data_obj,ptype){
+mod_position_page_server <- function(id,data_obj,ptype,analysis_datasest){
   stopifnot(ptype %in% data_obj$get_available_positions())
   moduleServer( id, function(input, output, session){
     ns <- session$ns

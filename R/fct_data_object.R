@@ -7,8 +7,10 @@
 #'
 #' @importFrom shiny tags
 #' @importFrom targets tar_objects tar_read_raw
-#' @importFrom dplyr starts_with mutate all_of select contains pull
+#' @importFrom dplyr starts_with mutate all_of select contains pull collect arrange filter
 #' @importFrom purrr map map_chr reduce pluck
+#' @importFrom arrow open_dataset
+#' @importFrom data.table data.table
 #' @noRd
 #' @examples
 #' data_obj <- data_object$new()
@@ -16,6 +18,31 @@
 #' purrr::map(c('qb','wr','te','rb'),~{data_obj$get_position_vars(.x)})
 data_object <- R6::R6Class("DataObject",
                            public = list(
+                               analysis_dataset = NULL,
+                               arrow_data_path = "data/nextgen_stats/",
+                               get_available_levels = function(analysis,lvl){
+                                   arrow::open_dataset(paste0(self$arrow_data_path,
+                                                              "ngs_",
+                                                              analysis,
+                                                              ".parquet")) |>
+                                       dplyr::distinct(.data[[lvl]]) |>
+                                       dplyr::collect() |>
+                                       purrr::pluck(lvl) |>
+                                       sort(decreasing = TRUE)
+                               },
+                               get_analysis_data = function(analysis,positions,seasons,weeks){
+                                   arrow::open_dataset(paste0(self$arrow_data_path,
+                                                              "ngs_",
+                                                              analysis,
+                                                              ".parquet")) |>
+                                       dplyr::filter(
+                                           player_position %in% positions &
+                                               season %in% seasons &
+                                               week %in% weeks) |>
+                                       dplyr::arrange(season,week) |>
+                                       dplyr::collect() |>
+                                       data.table::data.table()
+                               },
                                get_common_vars = function(){
                                    purrr::map(
                                        targets::tar_objects(),~{

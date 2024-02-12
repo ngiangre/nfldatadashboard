@@ -1,3 +1,14 @@
+download_nextgen_stats_data <- function(){
+    data_dir <- "data/"
+    if(!dir.exists(data_dir)){
+        dir.create(data_dir)
+    }
+    nflreadr::nflverse_download(
+        nextgen_stats,
+        folder_path = data_dir,
+        file_type = "parquet")
+}
+
 get_season_data <- function(type,stattype,pos_filter){
     week <- player_position <- field <- description <- NULL
     week_fcn <- switch(type,
