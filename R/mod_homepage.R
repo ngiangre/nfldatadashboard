@@ -37,6 +37,9 @@ mod_homepage_ui <- function(id){
       shiny::selectizeInput(ns('players'),label = "Select Players",
                             choices = NULL,multiple = TRUE,
                             width = "100%"),
+      shiny::selectizeInput(ns('stats'),label = "Select Statistics",
+                            choices = NULL,multiple = TRUE,
+                            width = "100%"),
       bslib::nav_panel(title="Quarterbacks",mod_position_page_ui(ns("qb_page_1"))),
       bslib::nav_panel(title="Wide Receivers",mod_position_page_ui(ns("wr_page_1"))),
       bslib::nav_panel(title="Tight Ends",mod_position_page_ui(ns("te_page_1"))),
@@ -81,22 +84,51 @@ mod_homepage_server <- function(id){
                                     selected = setdiff(data_obj$get_available_levels(input$analysis,
                                                                                      'week'),0L))
     })
-    analysis_dataset <- eventReactive(c(input$season,input$week,input$position),{
+    sa_analysis_dataset <- eventReactive(c(input$analysis,input$position,input$season),{
+        req(input$analysis,input$position,input$season)
+        data_obj$get_analysis_data(analysis = input$analysis,
+                                   positions = input$position,
+                                   seasons = input$season,
+                                   weeks = 0L)
+    })
+    sw_analysis_dataset <- eventReactive(c(input$analysis,input$position,input$season,input$week),{
         req(input$analysis,input$position,input$season,input$week)
         data_obj$get_analysis_data(analysis = input$analysis,
                                    positions = input$position,
                                    seasons = input$season,
                                    weeks = input$week)
     })
-    observeEvent(analysis_dataset(),{
+    observeEvent(c(sa_analysis_dataset(),sw_analysis_dataset()),{
         plyrs <- paste0(
-            analysis_dataset()$player_display_name,
-            " (",analysis_dataset()$player_position,
-            " ; ",analysis_dataset()$team_abbr,")")
+            sw_analysis_dataset()$player_display_name,
+            " (",sw_analysis_dataset()$player_position,
+            " ; ",sw_analysis_dataset()$team_abbr,")")
         shiny::updateSelectizeInput(session = session,
                                     inputId = 'players',
                                     choices = plyrs,
                                     selected = plyrs[1])
+        statValues <-
+            intersect(colnames(sw_analysis_dataset()),
+                      nflreadr::dictionary_nextgen_stats$field[-c(1:10,29)])
+        stats <- statValues
+        names(stats) <- paste0("<b>",statValues,"</b> <i>",
+                               nflreadr::dictionary_nextgen_stats$description[
+                                   match(statValues,nflreadr::dictionary_nextgen_stats$field)],
+                               "</i>")
+        renderSelectizeUI <-
+            I("{
+            item: function(item, escape) {
+              return '<div>' + item.label + '</div>';
+            },
+            option: function(item, escape) {
+              return '<div>' + item.label + '</div>';
+            }
+          }")
+        shiny::updateSelectizeInput(session = session,
+                                    inputId = 'stats',
+                                    choices = stats,
+                                    selected = stats[1],
+                                    options = list(render = renderSelectizeUI))
     })
     mod_position_page_server("qb_page_1",data_obj,ptype="qb",analysis_datasest)
     mod_position_page_server("wr_page_1",data_obj,ptype="wr",analysis_datasest)
