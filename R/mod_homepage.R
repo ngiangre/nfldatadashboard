@@ -34,16 +34,18 @@ mod_homepage_ui <- function(id){
           shiny::selectizeInput(ns("week"),"Week(s)",
                                 choices = NULL,multiple = TRUE)
       ),
-      shiny::selectizeInput(ns('players'),label = "Select Players",
-                            choices = NULL,multiple = TRUE,
-                            width = "100%"),
-      shiny::selectizeInput(ns('stats'),label = "Select Statistics",
-                            choices = NULL,multiple = TRUE,
-                            width = "100%"),
-      bslib::nav_panel(title="Quarterbacks",mod_position_page_ui(ns("qb_page_1"))),
-      bslib::nav_panel(title="Wide Receivers",mod_position_page_ui(ns("wr_page_1"))),
-      bslib::nav_panel(title="Tight Ends",mod_position_page_ui(ns("te_page_1"))),
-      bslib::nav_panel(title="Running Backs",mod_position_page_ui(ns("rb_page_1"))),
+      bslib::nav_panel(
+          'Homepage',
+          shiny::selectizeInput(ns('players'),label = "Select Players",
+                                choices = NULL,multiple = TRUE,
+                                width = "100%"),
+          shiny::selectizeInput(ns('stats'),label = bslib::tooltip(
+              trigger = list("Select Performance Indicator(s)",bsicons::bs_icon('info-circle')
+              ),"Message",id = ns("stat_tooltip")),
+              choices = NULL,multiple = TRUE,
+              width = "100%"),
+          mod_position_page_ui(ns("page_1"))
+      ),
       bslib::nav_spacer(),
       bslib::nav_item(link_github),
       title = bslib::tooltip(list("nfldatadashboard",bsicons::bs_icon("info-circle")),
@@ -99,14 +101,16 @@ mod_homepage_server <- function(id){
                                    weeks = input$week)
     })
     observeEvent(c(sa_analysis_dataset(),sw_analysis_dataset()),{
-        plyrs <- paste0(
+        plyrNames <- paste0(
             sw_analysis_dataset()$player_display_name,
             " (",sw_analysis_dataset()$player_position,
             " ; ",sw_analysis_dataset()$team_abbr,")")
+        plyrValues <- sw_analysis_dataset()$player_display_name
+        names(plyrValues) <- plyrNames
         shiny::updateSelectizeInput(session = session,
                                     inputId = 'players',
-                                    choices = plyrs,
-                                    selected = plyrs[1])
+                                    choices = plyrValues,
+                                    selected = plyrValues[1])
         statValues <-
             intersect(colnames(sw_analysis_dataset()),
                       nflreadr::dictionary_nextgen_stats$field[-c(1:10,29)])
@@ -115,6 +119,7 @@ mod_homepage_server <- function(id){
                                nflreadr::dictionary_nextgen_stats$description[
                                    match(statValues,nflreadr::dictionary_nextgen_stats$field)],
                                "</i>")
+        #https://stackoverflow.com/questions/73716725/is-there-a-way-to-display-html-inside-a-selectinput-in-an-r-shiny-app
         renderSelectizeUI <-
             I("{
             item: function(item, escape) {
@@ -130,10 +135,39 @@ mod_homepage_server <- function(id){
                                     selected = stats[1],
                                     options = list(render = renderSelectizeUI))
     })
-    mod_position_page_server("qb_page_1",data_obj,ptype="qb",analysis_datasest)
-    mod_position_page_server("wr_page_1",data_obj,ptype="wr",analysis_datasest)
-    mod_position_page_server("te_page_1",data_obj,ptype="te",analysis_datasest)
-    mod_position_page_server("rb_page_1",data_obj,ptype="rb",analysis_datasest)
+    sa_plot_data <- reactive({
+        req(input$stats,input$players)
+        sa_analysis_dataset() |>
+            select(any_of(c('season','season_type','player_display_name',
+                            'week','player_position','team_abbr',input$stats))) |>
+            filter(.data[['player_display_name']] %in% input$players) |>
+            tidyr::pivot_longer(
+                cols = input$stats,
+                names_to = "statistic"
+            )
+    }) |>
+        bindCache(input$stats,input$players,sw_analysis_dataset()) |>
+        bindEvent(input$stats,input$players,sw_analysis_dataset())
+    sw_plot_data <- reactive({
+        req(input$stats,input$players)
+
+        sw_analysis_dataset() |>
+            select(any_of(c('season','season_type','player_display_name',
+                            'week','player_position','team_abbr',input$stats))) |>
+            filter(.data[['player_display_name']] %in% input$players) |>
+            tidyr::pivot_longer(
+                cols = input$stats,
+                names_to = "statistic"
+            )
+    }) |>
+        bindCache(input$stats,input$players,sw_analysis_dataset()) |>
+        bindEvent(input$stats,input$players,sw_analysis_dataset())
+    mod_position_page_server("page_1",data_obj,ptype="qb",sa_plot_data,sw_plot_data)
+    observeEvent(input$stat_tooltip,{
+        bslib::update_tooltip('stat_tooltip',
+                              stringr::str_glue("Select atleast one performance indicator calculated by Next Gen Stats."),
+                              "The description of the performance indicator is italicized.")
+    })
   })
 }
 
