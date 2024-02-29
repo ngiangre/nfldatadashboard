@@ -53,6 +53,15 @@ data_object <- R6::R6Class("DataObject",
                                                week %in% weeks) |>
                                        dplyr::arrange(season,week) |>
                                        dplyr::collect() |>
+                                       dplyr::mutate(
+                                           player_unique_id =
+                                               paste0(.data[['player_display_name']],
+                                                      " (",
+                                                      .data[['team_abbr']],
+                                                      "; ",
+                                                      .data[['player_position']],
+                                                      ")")
+                                       ) |>
                                        data.table::data.table()
                                },
                                get_common_vars = function(){

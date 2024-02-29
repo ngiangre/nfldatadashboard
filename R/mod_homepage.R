@@ -111,11 +111,8 @@ mod_homepage_server <- function(id){
                                    weeks = session$userData[['weeks']])
     })
     observeEvent(c(sa_analysis_dataset(),sw_analysis_dataset()),{
-        plyrNames <- paste0(
-            sw_analysis_dataset()$player_display_name,
-            " (",sw_analysis_dataset()$player_position,
-            " ; ",sw_analysis_dataset()$team_abbr,")")
-        plyrValues <- sw_analysis_dataset()$player_display_name
+        plyrNames <- sw_analysis_dataset()$player_unique_id
+        plyrValues <- sw_analysis_dataset()$player_unique_id
         names(plyrValues) <- plyrNames
         shiny::updateSelectizeInput(session = session,
                                     inputId = 'players',
@@ -150,7 +147,7 @@ mod_homepage_server <- function(id){
         req(input$stats)
         tmp <-
             sa_analysis_dataset() |>
-            select(any_of(c('season','season_type','player_display_name',
+            select(any_of(c('season','season_type','player_unique_id',
                             'week','player_position','team_abbr',input$stats))) |>
             mutate(
                 ID = 1:(dplyr::n())
@@ -173,7 +170,8 @@ mod_homepage_server <- function(id){
         req(input$stats)
         tmp <-
             sw_analysis_dataset() |>
-            select(any_of(c('season','season_type','player_display_name',
+            select(any_of(c('season','season_type',
+                            'player_unique_id',
                             'week','player_position','team_abbr',input$stats))) |>
             mutate(
                 ID = 1:(dplyr::n())
@@ -192,7 +190,7 @@ mod_homepage_server <- function(id){
             dplyr::semi_join(
                 tmp |>
                     summarise(N=dplyr::n_distinct(week),
-                              .by = c('statistic','player_display_name',"season")) |>
+                              .by = c('statistic','player_unique_id',"season")) |>
                     filter(N>1)
             )
     }) |>
@@ -201,7 +199,7 @@ mod_homepage_server <- function(id){
     sa_plot_data <- reactive({
         sa_plot_alldata() |>
             filter(.data[['season']] %in% input$season) |>
-            filter(.data[['player_display_name']] %in% input$players)
+            filter(.data[['player_unique_id']] %in% input$players)
     }) |>
         bindCache(input$players,
                   input$season,
@@ -213,7 +211,7 @@ mod_homepage_server <- function(id){
         sw_plot_alldata() |>
             filter(.data[['season']] %in% input$season) |>
             filter(.data[['week']] %in% input$week) |>
-            filter(.data[['player_display_name']] %in% input$players)
+            filter(.data[['player_unique_id']] %in% input$players)
     }) |>
         bindCache(input$players,
                   input$season,input$week,

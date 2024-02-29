@@ -18,14 +18,14 @@
 #' dat_sw <-
 #' datar6$get_position_season_data('qb','sw') |>
 #'     dplyr::select(
-#'         dplyr::all_of(c("player_display_name","team_abbr",'week',
+#'         dplyr::all_of(c("player_unique_id","team_abbr",'week',
 #'                         indicators))
 #'     ) |>
 #'     tidyr::pivot_longer(
 #'         cols = dplyr::all_of(indicators),
 #'         names_to = "statistic"
 #'     ) |>
-#'     dplyr::filter(player_display_name %in% c( datar6$get_position_players('qb')[1:3] ))
+#'     dplyr::filter(player_unique_id %in% c( datar6$get_position_players('qb')[1:3] ))
 #'
 #'
 #' plotr6$sw_boxplots(dat_sw)
@@ -34,14 +34,14 @@
 #' dat_sa <-
 #' datar6$get_position_season_data('qb','sa') |>
 #'     dplyr::select(
-#'         dplyr::all_of(c("player_display_name","team_abbr",
+#'         dplyr::all_of(c("player_unique_id","team_abbr",
 #'                         indicators))
 #'     ) |>
 #'     tidyr::pivot_longer(
 #'         cols = dplyr::all_of(indicators),
 #'         names_to = "statistic"
 #'     ) |>
-#'     dplyr::filter(player_display_name %in% c( datar6$get_position_players('qb')[1:3] ))
+#'     dplyr::filter(player_unique_id %in% c( datar6$get_position_players('qb')[1:3] ))
 #'
 #' plotr6$sa_heatmap(dat_sa)
 plot_object <- R6::R6Class("PlotObject",
@@ -79,7 +79,7 @@ plot_object <- R6::R6Class("PlotObject",
                                        ) |>
                                        arrange(desc(statistic),team_abbr) |>
                                        mutate(
-                                           player_label = paste0(player_display_name,"\n(",team_abbr,")") |>
+                                           player_label = player_unique_id |>
                                                factor()
                                        ) |>
                                        ggplot(aes(forcats::fct_inorder(player_label),
@@ -110,10 +110,10 @@ plot_object <- R6::R6Class("PlotObject",
                                        dplyr::left_join(
                                            dat |>
                                                mutate(nvalue = ((value - min(value))/(max(value)-min(value))),
-                                                      .by=c(statistic,player_display_name)) |>
+                                                      .by=c(statistic,player_unique_id)) |>
                                                dplyr::summarise(mod = list(lm(value ~ week)),
                                                                 .by=c(statistic,
-                                                                      player_display_name,
+                                                                      player_unique_id,
                                                                       season)
                                                ) |>
                                                dplyr::mutate(
@@ -121,45 +121,45 @@ plot_object <- R6::R6Class("PlotObject",
                                                    chg = purrr::map_dbl(mod,~{exp(coefficients(.x)['week'])-1}),
                                                    perc_chg = scales::percent(round(chg,3))
                                                ),
-                                           by = c('statistic','player_display_name',"season")
+                                           by = c('statistic','player_unique_id',"season")
                                        ) |>
                                        mutate(
                                            week_tooltip = stringr::str_glue("
                                            Season: {season}
-                                           Player: {player_display_name}
+                                           Player: {player_unique_id}
                                            Week: {week}
                                            {statistic}: {round(value,2)}
                                                                             "),
                                            smooth_tooltip = stringr::str_glue("
                                            Season: {season}
-                                           Player: {player_display_name}
+                                           Player: {player_unique_id}
                                            {round(coef,2)} {ifelse(coef>0,'more','less')} {statistic}
                                                                               "),
                                            smooth_perc_tooltip = stringr::str_glue("
                                            Season: {season}
-                                           Player: {player_display_name}
+                                           Player: {player_unique_id}
                                            {perc_chg} {ifelse(chg>0,'increased','decreased')} {statistic}
                                                                               ")
                                        ) |>
-                                       dplyr::arrange(player_display_name,week) |>
-                                       ggplot(aes(week,value,group=player_display_name)) +
+                                       dplyr::arrange(player_unique_id,week) |>
+                                       ggplot(aes(week,value,group=player_unique_id)) +
                                        geom_smooth_interactive(method='lm',formula='y ~ x',se = FALSE,
-                                                   mapping=aes(color=player_display_name,
+                                                   mapping=aes(color=player_unique_id,
                                                                tooltip=smooth_perc_tooltip,
-                                                               data_id=player_display_name),
+                                                               data_id=player_unique_id),
                                                    alpha = 0.5,linewidth=2,
                                                    show.legend = FALSE) +
-                                       geom_path(aes(color=player_display_name),
+                                       geom_path(aes(color=player_unique_id),
                                                  linewidth=.5,show.legend = FALSE) +
                                        geom_point_interactive(aes(
-                                           data_id = interaction(player_display_name,week),
+                                           data_id = interaction(player_unique_id,week),
                                            tooltip = week_tooltip,
-                                           shape=player_display_name,
-                                           color=player_display_name),
+                                           shape=player_unique_id,
+                                           color=player_unique_id),
                                            size = 4) +
                                        scale_x_continuous(breaks = scales::breaks_width(1)) +
                                        scale_color_manual(values = self$generate_discrete_colors(
-                                          dplyr::n_distinct(dat$player_display_name)
+                                          dplyr::n_distinct(dat$player_unique_id)
                                        )) +
                                        guides(shape=guide_legend(title = NULL,override.aes = list(size=5)),
                                               color=guide_legend(title = NULL)) +
@@ -189,12 +189,12 @@ plot_object <- R6::R6Class("PlotObject",
                                        dat |>
                                        mutate(
                                            player_tooltip = stringr::str_glue("
-                                           Player: {player_display_name}
+                                           Player: {player_unique_id}
                                            Team: {team_abbr}
                                            {statistic}: {round(value,2)}
                                                                             "),
-                                           player_display_name = stringr::str_remove(player_display_name,"\\'"),
-                                           point_size = dplyr::if_else(player_display_name %in% players,10,5)
+                                           player_unique_id = stringr::str_remove(player_unique_id,"\\'"),
+                                           point_size = dplyr::if_else(player_unique_id %in% players,10,5)
                                        ) |>
                                        arrange(point_size)
                                    p <-
@@ -202,9 +202,9 @@ plot_object <- R6::R6Class("PlotObject",
                                        ggplot(aes(value,factor(1))) +
                                        geom_boxplot(color="gray40",size = 1,
                                                     outlier.shape = NA,alpha = 0) +
-                                       geom_point_interactive(aes(data_id = player_display_name,
+                                       geom_point_interactive(aes(data_id = player_unique_id,
                                                                   tooltip = player_tooltip,
-                                                                  fill = player_display_name,
+                                                                  fill = player_unique_id,
                                                                   size = point_size),
                                                               color = 'black',
                                                               alpha = .9,
@@ -245,32 +245,32 @@ plot_object <- R6::R6Class("PlotObject",
                                    dat_labelled <-
                                        dat |>
                                        mutate(
-                                           player_display_name = stringr::str_remove(player_display_name,"\\'")
+                                           player_unique_id = stringr::str_remove(player_unique_id,"\\'")
                                        ) |>
                                        summarise(
                                            var = sd(value) |> round(digits=2),
                                            avg = mean(value) |> round(digits=2),
-                                           .by = c(player_display_name,statistic,team_abbr,season)
+                                           .by = c(player_unique_id,statistic,team_abbr,season)
                                        ) |>
                                        mutate(
                                            player_tooltip = stringr::str_glue("
                                            Season: {season}
-                                           Player: {player_display_name}
+                                           Player: {player_unique_id}
                                            Team: {team_abbr}
                                            {statistic}
                                            Overall: {avg}
                                            Variation: {var}
                                                                             "),
-                                           point_size = dplyr::if_else(player_display_name %in% players,10,5)
+                                           point_size = dplyr::if_else(player_unique_id %in% players,10,5)
                                        ) |>
                                        arrange(point_size)
                                    dat_labelled |>
                                        ggplot(aes(var,avg)) +
                                        geom_smooth(method='lm',se=FALSE,color='red',linetype='dashed',
                                                    formula = 'y ~ x') +
-                                       geom_point_interactive(aes(data_id=player_display_name,
+                                       geom_point_interactive(aes(data_id=player_unique_id,
                                                                   tooltip=player_tooltip,
-                                                                  fill=player_display_name,
+                                                                  fill=player_unique_id,
                                                                   size = point_size),
                                                               color='black',alpha = 0.9,shape=21,
                                                               hover_nearest = TRUE) +
