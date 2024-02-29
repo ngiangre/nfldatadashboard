@@ -15,7 +15,19 @@
 #' @examples
 #' data_obj <- data_object$new()
 #' data_obj$get_common_vars()
-#' purrr::map(c('qb','wr','te','rb'),~{data_obj$get_position_vars(.x)})
+#' c('qb','wr','te','rb') |>
+#' purrr::set_names() |>
+#' purrr::map(~{data_obj$get_position_vars(.x)})
+#'
+#' data_obj$get_analysis_data(analysis = "passing",
+#' positions = "QB",
+#' seasons = c(2023),
+#' weeks = c(1))
+#'
+#' data_obj$get_analysis_data(analysis = "passing",
+#' positions = "QB",
+#' seasons = NULL,
+#' weeks = NULL)
 data_object <- R6::R6Class("DataObject",
                            public = list(
                                analysis_dataset = NULL,

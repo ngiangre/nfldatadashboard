@@ -65,26 +65,36 @@ mod_homepage_server <- function(id){
   moduleServer( id, function(input, output, session){
     ns <- session$ns
     data_obj <- data_object$new()
+    session$userData[['analyses']] <-
+        c('passing','receiving',"rushing")
     observeEvent(input$analysis,{
+        req(input$analysis)
+        positions <-
+            data_obj$get_available_levels(input$analysis,
+                                          'player_position')
+        session$userData[['positions']] <- positions
         shiny::updateSelectizeInput(session = session,
                                     inputId = "position",
-                                    choices = data_obj$get_available_levels(input$analysis,
-                                                                            'player_position'),
-                                    selected = data_obj$get_available_levels(input$analysis,
-                                                                            'player_position')[1])
+                                    choices = positions,
+                                    selected = positions[1])
     })
     observeEvent(input$position,{
         req(input$analysis)
+        seasons <-
+            data_obj$get_available_levels(input$analysis,'season')
+        session$userData[['seasons']] <- seasons
         shiny::updateSelectizeInput(session = session,
                                     inputId = "season",
-                                    choices = data_obj$get_available_levels(input$analysis,'season'),
-                                    selected = data_obj$get_available_levels(input$analysis,'season')[1])
+                                    choices = seasons,
+                                    selected = seasons[1])
+        weeks <-
+            setdiff(data_obj$get_available_levels(input$analysis,
+                                                  'week'),0L)
+        session$userData[['weeks']] <- weeks
         shiny::updateSelectizeInput(session = session,
                                     inputId = "week",
-                                    choices = setdiff(data_obj$get_available_levels(input$analysis,
-                                                                                    'week'),0L),
-                                    selected = setdiff(data_obj$get_available_levels(input$analysis,
-                                                                                     'week'),0L))
+                                    choices = weeks,
+                                    selected = weeks)
     })
     sa_analysis_dataset <- eventReactive(c(input$analysis,input$position,input$season),{
         req(input$analysis,input$position,input$season)
@@ -93,12 +103,12 @@ mod_homepage_server <- function(id){
                                    seasons = input$season,
                                    weeks = 0L)
     })
-    sw_analysis_dataset <- eventReactive(c(input$analysis,input$position,input$season,input$week),{
-        req(input$analysis,input$position,input$season,input$week)
+    sw_analysis_dataset <- eventReactive(c(input$analysis,input$position,input$season),{
+        req(input$analysis,input$position,input$season)
         data_obj$get_analysis_data(analysis = input$analysis,
                                    positions = input$position,
                                    seasons = input$season,
-                                   weeks = input$week)
+                                   weeks = session$userData[['weeks']])
     })
     observeEvent(c(sa_analysis_dataset(),sw_analysis_dataset()),{
         plyrNames <- paste0(
@@ -129,40 +139,91 @@ mod_homepage_server <- function(id){
               return '<div>' + item.label + '</div>';
             }
           }")
+        session$userData[['statistics']] <- stats
         shiny::updateSelectizeInput(session = session,
                                     inputId = 'stats',
                                     choices = stats,
                                     selected = stats[1],
                                     options = list(render = renderSelectizeUI))
     })
-    sa_plot_data <- reactive({
-        req(input$stats,input$players)
-        sa_analysis_dataset() |>
+    sa_plot_alldata <- reactive({
+        req(input$stats)
+        tmp <-
+            sa_analysis_dataset() |>
             select(any_of(c('season','season_type','player_display_name',
                             'week','player_position','team_abbr',input$stats))) |>
-            filter(.data[['player_display_name']] %in% input$players) |>
+            mutate(
+                ID = 1:(dplyr::n())
+            ) |>
             tidyr::pivot_longer(
                 cols = input$stats,
                 names_to = "statistic"
+            ) |>
+            mutate(
+                statistic = factor(statistic,levels=session$userData[['statistics']]),
+                season = factor(season,levels=session$userData[['seasons']]),
+                week = factor(week,levels=c(0L))
             )
-    }) |>
-        bindCache(input$stats,input$players,sw_analysis_dataset()) |>
-        bindEvent(input$stats,input$players,sw_analysis_dataset())
-    sw_plot_data <- reactive({
-        req(input$stats,input$players)
 
-        sw_analysis_dataset() |>
+        tmp
+    }) |>
+        bindCache(input$stats,sa_analysis_dataset()) |>
+        bindEvent(input$stats,sa_analysis_dataset())
+    sw_plot_alldata <- reactive({
+        req(input$stats)
+        tmp <-
+            sw_analysis_dataset() |>
             select(any_of(c('season','season_type','player_display_name',
                             'week','player_position','team_abbr',input$stats))) |>
-            filter(.data[['player_display_name']] %in% input$players) |>
+            mutate(
+                ID = 1:(dplyr::n())
+            ) |>
             tidyr::pivot_longer(
                 cols = input$stats,
                 names_to = "statistic"
+            ) |>
+            mutate(
+                statistic = factor(statistic,levels=session$userData[['statistics']]),
+                season = factor(season,levels=session$userData[['seasons']]),
+                week = factor(week,levels=session$userData[['weeks']])
+            )
+
+        tmp |>
+            dplyr::semi_join(
+                tmp |>
+                    summarise(N=dplyr::n_distinct(week),
+                              .by = c('statistic','player_display_name',"season")) |>
+                    filter(N>1)
             )
     }) |>
-        bindCache(input$stats,input$players,sw_analysis_dataset()) |>
-        bindEvent(input$stats,input$players,sw_analysis_dataset())
-    mod_position_page_server("page_1",data_obj,ptype="qb",sa_plot_data,sw_plot_data)
+        bindCache(input$stats,sw_analysis_dataset()) |>
+        bindEvent(input$stats,sw_analysis_dataset())
+    sa_plot_data <- reactive({
+        sa_plot_alldata() |>
+            filter(.data[['season']] %in% input$season) |>
+            filter(.data[['player_display_name']] %in% input$players)
+    }) |>
+        bindCache(input$players,
+                  input$season,
+                  sa_plot_alldata()) |>
+        bindEvent(input$players,
+                  input$season,
+                  sa_plot_alldata())
+    sw_plot_data <- reactive({
+        sw_plot_alldata() |>
+            filter(.data[['season']] %in% input$season) |>
+            filter(.data[['week']] %in% input$week) |>
+            filter(.data[['player_display_name']] %in% input$players)
+    }) |>
+        bindCache(input$players,
+                  input$season,input$week,
+                  sw_plot_alldata()) |>
+        bindEvent(input$players,
+                  input$season,input$week,
+                  sw_plot_alldata())
+    mod_position_page_server("page_1",data_obj,ptype="qb",
+                             sa_plot_data,sw_plot_data,
+                             sa_plot_alldata,sw_plot_alldata)
     observeEvent(input$stat_tooltip,{
         bslib::update_tooltip('stat_tooltip',
                               stringr::str_glue("Select atleast one performance indicator calculated by Next Gen Stats."),

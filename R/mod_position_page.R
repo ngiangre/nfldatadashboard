@@ -27,7 +27,7 @@ mod_position_page_ui <- function(id){
               ),
               bslib::accordion_panel(
                   "Week-By-Week Season Performance",
-                  girafeOutput(ns('sw_boxplots'),
+                  girafeOutput(ns('sw_week_scatterplot'),
                                width = 800,height = 800)
               )
           )
@@ -64,7 +64,7 @@ mod_position_page_ui <- function(id){
 #' @importFrom stringr str_glue
 #' @importFrom dplyr select all_of filter
 #' @importFrom tidyr pivot_longer
-mod_position_page_server <- function(id,data_obj,ptype,subdat_sa,subdat_sw){
+mod_position_page_server <- function(id,data_obj,ptype,subdat_sa,subdat_sw,alldat_sa,alldat_sw){
   stopifnot(ptype %in% data_obj$get_available_positions())
   moduleServer( id, function(input, output, session){
     ns <- session$ns
@@ -73,7 +73,7 @@ mod_position_page_server <- function(id,data_obj,ptype,subdat_sa,subdat_sw){
         req(nrow(subdat_sa())>=1)
         plot_obj$sa_heatmap(subdat_sa())
     })
-    output$sw_boxplots <- renderGirafe({
+    output$sw_week_scatterplot <- renderGirafe({
         req(nrow(subdat_sw())>=1)
         p <- plot_obj$sw_week_scatterplot(subdat_sw())
         girafe(code = print(p),

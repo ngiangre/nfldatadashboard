@@ -73,10 +73,9 @@ plot_object <- R6::R6Class("PlotObject",
                                },
                                sa_heatmap = function(dat){
                                    dat |>
-                                       mutate(statistic = factor(statistic)) |>
                                        mutate(
                                            zvalue = (value - mean(value))/(sd(value)),
-                                           .by = statistic
+                                           .by = c(statistic)
                                        ) |>
                                        arrange(desc(statistic),team_abbr) |>
                                        mutate(
@@ -96,74 +95,50 @@ plot_object <- R6::R6Class("PlotObject",
                                        scale_x_discrete(position = "top",labels = label_wrap_gen(width=5)) +
                                        labs(x=NULL,y=NULL,caption="'Bluer' colors indicate lower performance compared to other players, 'redder' colors indicate higher performance compared to other players") +
                                        self$get_base_theme() +
+                                       facet_wrap(~season,nrow=1) +
                                        theme(
                                            legend.position = "none",
                                            axis.text.x = element_text(size=self$global_text_size,face = "bold"),
                                            axis.text.y = element_text(size=self$global_text_size,face = "bold")
                                        )
                                },
-                               sw_boxplots = function(dat){
-                                   dat |>
-                                       mutate(
-                                           week_tooltip = stringr::str_glue("
-                                           Player: {player_display_name}
-                                           Week: {week}
-                                           {statistic}: {round(value,2)}
-                                                                            ")
-                                       ) |>
-                                       ggplot(aes(value,player_display_name,
-                                                  group=player_display_name)) +
-                                       geom_boxplot(size=1,fill="gray50",color="gray50",
-                                                    alpha=0,outlier.shape = NA) +
-                                       geom_point_interactive(
-                                           aes(data_id = week,
-                                               tooltip = week_tooltip,
-                                               fill = week),
-                                           position = self$pos_lil_jitter,size = 5,
-                                           color="black",shape=21,show.legend = FALSE) +
-                                       scale_fill_distiller(palette = "BuPu",type = "div",direction = 1) +
-                                       facet_wrap(~stringr::str_replace_all(statistic,"_"," "),
-                                                  scales = "free_x",ncol=2,
-                                                  labeller = label_wrap_gen(width=self$wrap_len,
-                                                                            multi_line = TRUE)) +
-                                       labs(y=NULL,caption="Each dot is a game during the 2023 season\n'Low' colors for games early in the season, and 'high' colors for later in the season") +
-                                       self$get_base_theme() +
-                                       theme(
-                                           strip.text = element_text(face='bold',size = self$global_text_size),
-                                           axis.text.y = element_text(size=self$global_text_size,face = "bold")
-                                       )
-                               },
                                sw_week_scatterplot = function(dat){
                                    dat |>
+                                       mutate(
+                                           week = as.integer(week),
+                                       ) |>
                                        dplyr::left_join(
                                            dat |>
                                                mutate(nvalue = ((value - min(value))/(max(value)-min(value))),
                                                       .by=c(statistic,player_display_name)) |>
                                                dplyr::summarise(mod = list(lm(value ~ week)),
-                                                                .by=c(statistic,player_display_name)
+                                                                .by=c(statistic,
+                                                                      player_display_name,
+                                                                      season)
                                                ) |>
                                                dplyr::mutate(
                                                    coef = purrr::map_dbl(mod,~{coefficients(.x)['week']}),
                                                    chg = purrr::map_dbl(mod,~{exp(coefficients(.x)['week'])-1}),
                                                    perc_chg = scales::percent(round(chg,3))
                                                ),
-                                           by = c('statistic','player_display_name')
+                                           by = c('statistic','player_display_name',"season")
                                        ) |>
                                        mutate(
                                            week_tooltip = stringr::str_glue("
+                                           Season: {season}
                                            Player: {player_display_name}
                                            Week: {week}
                                            {statistic}: {round(value,2)}
                                                                             "),
                                            smooth_tooltip = stringr::str_glue("
+                                           Season: {season}
                                            Player: {player_display_name}
                                            {round(coef,2)} {ifelse(coef>0,'more','less')} {statistic}
-                                           across season
                                                                               "),
                                            smooth_perc_tooltip = stringr::str_glue("
+                                           Season: {season}
                                            Player: {player_display_name}
                                            {perc_chg} {ifelse(chg>0,'increased','decreased')} {statistic}
-                                           across season
                                                                               ")
                                        ) |>
                                        dplyr::arrange(player_display_name,week) |>
@@ -188,11 +163,11 @@ plot_object <- R6::R6Class("PlotObject",
                                        )) +
                                        guides(shape=guide_legend(title = NULL,override.aes = list(size=5)),
                                               color=guide_legend(title = NULL)) +
-                                       facet_wrap(~stringr::str_replace_all(statistic,"_"," "),
-                                                  scales = 'free',ncol=3,
+                                       facet_grid(stringr::str_replace_all(statistic,"_"," ")~season,
+                                                  scales = 'free_y',
                                                   labeller = label_wrap_gen(width=self$wrap_len,
                                                                             multi_line = TRUE)) +
-                                       labs(caption="Each dot is a game during the 2023 season for the selected players.") +
+                                       labs(caption="Each dot is a game during the season for the selected players.") +
                                        self$get_base_theme() +
                                        theme(
                                            strip.text = element_text(face='bold',size = self$global_text_size),
@@ -242,8 +217,8 @@ plot_object <- R6::R6Class("PlotObject",
                                        scale_size_identity() +
                                        guides(fill = guide_legend(title=NULL,nrow=1,
                                                                   override.aes = list(size = 5))) +
-                                       facet_wrap(~stringr::str_replace_all(statistic,"_"," "),
-                                                  scales = "free_x",ncol=3,
+                                       facet_grid(stringr::str_replace_all(statistic,"_"," ")~season,
+                                                  scales = "free_x",
                                                   labeller = label_wrap_gen(width=self$wrap_len,
                                                                             multi_line = TRUE)) +
                                        labs(y=NULL) +
@@ -275,10 +250,11 @@ plot_object <- R6::R6Class("PlotObject",
                                        summarise(
                                            var = sd(value) |> round(digits=2),
                                            avg = mean(value) |> round(digits=2),
-                                           .by = c(player_display_name,statistic,team_abbr)
+                                           .by = c(player_display_name,statistic,team_abbr,season)
                                        ) |>
                                        mutate(
                                            player_tooltip = stringr::str_glue("
+                                           Season: {season}
                                            Player: {player_display_name}
                                            Team: {team_abbr}
                                            {statistic}
@@ -304,8 +280,8 @@ plot_object <- R6::R6Class("PlotObject",
                                        scale_size_identity() +
                                        guides(fill = guide_legend(title=NULL,nrow=1,
                                                                   override.aes = list(size = 5))) +
-                                       facet_wrap(~stringr::str_replace_all(statistic,"_"," "),
-                                                  scales="free",ncol=3,
+                                       facet_grid(stringr::str_replace_all(statistic,"_"," ")~season,
+                                                  scales = "free",
                                                   labeller = label_wrap_gen(width=self$wrap_len,
                                                                             multi_line = TRUE)) +
                                        scale_x_continuous(limits = c(0,NA)) +
