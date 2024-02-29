@@ -103,12 +103,16 @@ plot_object <- R6::R6Class("PlotObject",
                                        )
                                },
                                sw_week_scatterplot = function(dat){
-                                   dat |>
+                                   sub <-
+                                       dat |>
                                        mutate(
                                            week = as.integer(week),
                                        ) |>
                                        dplyr::left_join(
                                            dat |>
+                                               mutate(
+                                                   week = as.integer(week),
+                                               ) |>
                                                mutate(nvalue = ((value - min(value))/(max(value)-min(value))),
                                                       .by=c(statistic,player_unique_id)) |>
                                                dplyr::summarise(mod = list(lm(value ~ week)),
@@ -141,8 +145,11 @@ plot_object <- R6::R6Class("PlotObject",
                                            {perc_chg} {ifelse(chg>0,'increased','decreased')} {statistic}
                                                                               ")
                                        ) |>
-                                       dplyr::arrange(player_unique_id,week) |>
-                                       ggplot(aes(week,value,group=player_unique_id)) +
+                                       dplyr::arrange(player_unique_id,week)
+
+                                   sub |>
+                                       ggplot(aes(week,
+                                           value,group=player_unique_id)) +
                                        geom_smooth_interactive(method='lm',formula='y ~ x',se = FALSE,
                                                    mapping=aes(color=player_unique_id,
                                                                tooltip=smooth_perc_tooltip,
@@ -157,7 +164,7 @@ plot_object <- R6::R6Class("PlotObject",
                                            shape=player_unique_id,
                                            color=player_unique_id),
                                            size = 4) +
-                                       scale_x_continuous(breaks = scales::breaks_width(1)) +
+                                       scale_x_continuous(breaks = as.integer(levels(dat$week))) +
                                        scale_color_manual(values = self$generate_discrete_colors(
                                           dplyr::n_distinct(dat$player_unique_id)
                                        )) +
@@ -167,7 +174,8 @@ plot_object <- R6::R6Class("PlotObject",
                                                   scales = 'free_y',
                                                   labeller = label_wrap_gen(width=self$wrap_len,
                                                                             multi_line = TRUE)) +
-                                       labs(caption="Each dot is a game during the season for the selected players.") +
+                                       labs(x = "Week",
+                                            caption="Each dot is a game during the season for the selected players.") +
                                        self$get_base_theme() +
                                        theme(
                                            strip.text = element_text(face='bold',size = self$global_text_size),

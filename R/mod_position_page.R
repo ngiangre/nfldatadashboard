@@ -64,7 +64,7 @@ mod_position_page_ui <- function(id){
 #' @importFrom stringr str_glue
 #' @importFrom dplyr select all_of filter
 #' @importFrom tidyr pivot_longer
-mod_position_page_server <- function(id,data_obj,ptype,subdat_sa,subdat_sw,alldat_sa,alldat_sw){
+mod_position_page_server <- function(id,data_obj,ptype,subdat_sa,subdat_sw,alldat_sa,alldat_sw,player_input){
   stopifnot(ptype %in% data_obj$get_available_positions())
   moduleServer( id, function(input, output, session){
     ns <- session$ns
@@ -85,7 +85,7 @@ mod_position_page_server <- function(id,data_obj,ptype,subdat_sa,subdat_sw,allda
     })
     output$sa_distribution_plot <- renderGirafe({
         req(nrow(alldat_sa())>=1)
-        p <- plot_obj$sa_distribution_plot(alldat_sa(),input$player_2)
+        p <- plot_obj$sa_distribution_plot(alldat_sa(),player_input())
         girafe(code = print(p),
                width_svg = 15, height_svg = 15,
                options = list(
@@ -95,7 +95,7 @@ mod_position_page_server <- function(id,data_obj,ptype,subdat_sa,subdat_sw,allda
     })
     output$sw_scatterplot <- renderGirafe({
         req(nrow(alldat_sw())>=1)
-        p <- plot_obj$sw_scatterplot(alldat_sw(),input$player_2)
+        p <- plot_obj$sw_scatterplot(alldat_sw(),player_input())
         girafe(code = print(p),
                width_svg = 15, height_svg = 15,
                options = list(

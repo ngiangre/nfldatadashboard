@@ -51,9 +51,9 @@ mod_homepage_ui <- function(id){
       title = bslib::tooltip(list("nfldatadashboard",bsicons::bs_icon("info-circle")),
                              "Dashboard Goal: Visualize NFL player's performance.",
                              "1) Select players and performance indicators.",
-                             "2) Compare player performance overall and across games.",
+                             "2) Compare player performance overall and across seasons and games.",
                              "See the left sidebar for performance indicators with descriptions.",
-                             "(Future versions: More positions, multivariate statistics, predict fantasy points, construct fantasy teams.)"
+                             "(Future versions: Multivariate statistics, prediction of fantasy points, construction of fantasy teams.)"
                              )
   )
 }
@@ -182,8 +182,8 @@ mod_homepage_server <- function(id){
             ) |>
             mutate(
                 statistic = factor(statistic,levels=session$userData[['statistics']]),
-                season = factor(season,levels=session$userData[['seasons']]),
-                week = factor(week,levels=session$userData[['weeks']])
+                season = factor(season,levels=session$userData[['seasons']]) |> forcats::fct_rev(),
+                week = factor(week,levels=session$userData[['weeks']]) |> forcats::fct_rev()
             )
 
         tmp |>
@@ -221,7 +221,8 @@ mod_homepage_server <- function(id){
                   sw_plot_alldata())
     mod_position_page_server("page_1",data_obj,ptype="qb",
                              sa_plot_data,sw_plot_data,
-                             sa_plot_alldata,sw_plot_alldata)
+                             sa_plot_alldata,sw_plot_alldata,
+                             reactive(input$players))
     observeEvent(input$stat_tooltip,{
         bslib::update_tooltip('stat_tooltip',
                               stringr::str_glue("Select atleast one performance indicator calculated by Next Gen Stats."),
