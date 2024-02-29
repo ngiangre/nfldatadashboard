@@ -149,14 +149,14 @@ mod_homepage_server <- function(id){
             sa_analysis_dataset() |>
             select(any_of(c('season','season_type','player_unique_id',
                             'week','player_position','team_abbr',input$stats))) |>
-            mutate(
+            dplyr::mutate(
                 ID = 1:(dplyr::n())
             ) |>
             tidyr::pivot_longer(
                 cols = input$stats,
                 names_to = "statistic"
             ) |>
-            mutate(
+            dplyr::mutate(
                 statistic = factor(statistic,levels=session$userData[['statistics']]),
                 season = factor(season,levels=session$userData[['seasons']]),
                 week = factor(week,levels=c(0L))
@@ -180,7 +180,7 @@ mod_homepage_server <- function(id){
                 cols = input$stats,
                 names_to = "statistic"
             ) |>
-            mutate(
+            dplyr::mutate(
                 statistic = factor(statistic,levels=session$userData[['statistics']]),
                 season = factor(season,levels=session$userData[['seasons']]) |> forcats::fct_rev(),
                 week = factor(week,levels=session$userData[['weeks']]) |> forcats::fct_rev()
@@ -191,7 +191,8 @@ mod_homepage_server <- function(id){
                 tmp |>
                     summarise(N=dplyr::n_distinct(week),
                               .by = c('statistic','player_unique_id',"season")) |>
-                    filter(N>1)
+                    filter(N>1),
+                by = dplyr::join_by(season, player_unique_id, statistic)
             )
     }) |>
         bindCache(input$stats,sw_analysis_dataset()) |>
