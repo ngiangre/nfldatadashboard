@@ -93,7 +93,7 @@ plot_object <- R6::R6Class("PlotObject",
                                        geom_label(aes(label = round(value,1)),
                                                  color='black',fill='white',fontface='bold') +
                                        scale_x_discrete(position = "top",labels = label_wrap_gen(width=5)) +
-                                       labs(x=NULL,y=NULL,caption="'Bluer' colors indicate lower performance compared to other players, 'redder' colors indicate higher performance compared to other players") +
+                                       labs(x=NULL,y=NULL,caption="'Bluer' colors indicate lower performance compared to other players\n'Redder' colors indicate higher performance compared to other players") +
                                        self$get_base_theme() +
                                        facet_wrap(~season,nrow=1) +
                                        theme(

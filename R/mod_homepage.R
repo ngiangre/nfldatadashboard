@@ -60,6 +60,7 @@ mod_homepage_ui <- function(id){
 
 #' homepage Server Functions
 #'
+#' @importFrom dplyr any_of mutate select where
 #' @noRd
 mod_homepage_server <- function(id){
   moduleServer( id, function(input, output, session){
@@ -96,19 +97,21 @@ mod_homepage_server <- function(id){
                                     choices = weeks,
                                     selected = weeks)
     })
-    sa_analysis_dataset <- eventReactive(c(input$analysis,input$position,input$season),{
-        req(input$analysis,input$position,input$season)
-        data_obj$get_analysis_data(analysis = input$analysis,
-                                   positions = input$position,
-                                   seasons = input$season,
-                                   weeks = 0L)
-    })
     sw_analysis_dataset <- eventReactive(c(input$analysis,input$position,input$season),{
         req(input$analysis,input$position,input$season)
         data_obj$get_analysis_data(analysis = input$analysis,
                                    positions = input$position,
                                    seasons = input$season,
                                    weeks = session$userData[['weeks']])
+    })
+    sa_analysis_dataset <- eventReactive(sw_analysis_dataset(),{
+        .SD <- NULL
+        sw_analysis_dataset()[,lapply(.SD,mean),
+            by=c("player_display_name","player_position","team_abbr",
+                 "player_gsis_id","player_first_name","player_last_name",
+                 "player_short_name","player_unique_id","season"),
+            .SDcols = setdiff((sw_analysis_dataset() |> select(where(is.numeric)) |> colnames()),"season")] |>
+            mutate(week = 0L)
     })
     observeEvent(c(sa_analysis_dataset(),sw_analysis_dataset()),{
         plyrNames <- sw_analysis_dataset()$player_unique_id

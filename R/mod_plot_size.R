@@ -2,25 +2,47 @@
 #'
 #' @description A shiny Module.
 #'
-#' @param id character identifier for module
-#' @param width_selection numeric Range of values for plot width
-#' @param height_selection numeric Range of values for plot height
+#' @param id character identifier for module.
+#' @param width_value numeric Value for initial plot width.
+#' @param height_value numeric Value for initial plot height.
+#' @param width_selection list List of arguments to splice into do.call for
+#' `numericInput`.
+#' @param height_selection list List of arguments to splice into do.call for
+#' `numericInput`.
 #'
 #' @noRd
 #'
 #' @importFrom shiny NS div radioButtons
-mod_plot_size_ui <- function(id,width_selection=seq(800,2400,200),
-                             height_selection=seq(800,2400,200)){
+#' @examples
+#' shiny::shinyApp(bslib::page_fluid(
+#' mod_plot_size_ui('s')
+#' ),function(id,input,output){
+#' mod_plot_size_server('s')
+#' })
+#'
+mod_plot_size_ui <- function(id,
+                             width_value = 400,
+                             height_value = 400,
+                             width_input =
+                                 list(min=200,max = 4000,step = 100,width = 100),
+                             height_input =
+                                 list(min=200,max = 4000,step = 100,width = 100),
+                             ...){
+    stopifnot(is.numeric(width_value))
+    stopifnot(is.numeric(height_value))
+    stopifnot(is.list(width_input))
+    stopifnot(is.list(height_input))
   ns <- NS(id)
   div(
-      shiny::radioButtons(ns('width'),label = 'Image Width',
-                          choices = width_selection,
-                          selected = median(width_selection),
-                          inline = TRUE),
-      shiny::radioButtons(ns('height'),label = 'Image Height',
-                          choices = height_selection,
-                          selected = median(height_selection),
-                          inline = TRUE)
+      style = 'display: flex;',
+      do.call(shiny::numericInput,c(inputId = ns('width'),
+                                    label = 'Image Width',
+                                    width_value,
+                                    width_input)),
+      do.call(shiny::numericInput,c(inputId = ns('height'),
+                                    label = 'Image Height',
+                                    height_value,
+                                    height_input))
   )
 }
 
